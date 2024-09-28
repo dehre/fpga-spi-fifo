@@ -3,8 +3,8 @@
 -- Can reset the state of o_Toggle to 0 by disabling i_Enable
 
 library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 entity Count_And_Toggle is
   generic (
@@ -22,7 +22,6 @@ architecture RTL of Count_And_Toggle is
   signal r_Counter : natural range 0 to COUNT_LIMIT - 1;
 
 begin
-
   -- This process toggles the output at desired frequency   
   process (i_Clk) is
   begin
@@ -40,5 +39,4 @@ begin
       end if;
     end if;
   end process;
-
 end architecture;
