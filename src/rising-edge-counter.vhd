@@ -14,7 +14,8 @@ end entity;
 
 architecture RTL of RisingEdgeCounter is
 
-  -- Register storing the number of rising edges, from 0 to 3.
+  -- Register storing the number of rising edges,
+  -- from 0 to (<onboard-leds-count> - 1).
   signal r_count : natural range 0 to COUNT_LIMIT - 1;
 
 begin
