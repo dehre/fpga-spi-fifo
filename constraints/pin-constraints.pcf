@@ -1,0 +1,48 @@
+# Go Board Pin Constraints File
+# Family & Device:    iCE40HX1K
+# Package:            VQ100
+
+# Main FPGA Clock
+set_io i_clk 15
+
+# LED Pins:
+set_io o_led_1 56
+set_io o_led_2 57
+set_io o_led_3 59
+set_io o_led_4 60
+
+# Push-Button Switches
+set_io i_switch_1 53
+set_io i_switch_2 51
+set_io i_switch_3 54
+set_io i_switch_4 52
+
+# 7 Segment Outputs
+set_io o_segment1_a 3
+set_io o_segment1_b 4
+set_io o_segment1_c 93
+set_io o_segment1_d 91
+set_io o_segment1_e 90
+set_io o_segment1_f 1
+set_io o_segment1_g 2
+set_io o_segment2_a 100
+set_io o_segment2_b 99
+set_io o_segment2_c 97
+set_io o_segment2_d 95
+set_io o_segment2_e 94
+set_io o_segment2_f 8
+set_io o_segment2_g 96
+
+# UART Outputs
+set_io i_uart_rx 73
+set_io o_uart_tx 74
+
+# PMOD Signals
+set_io io_pmod_1 65
+set_io io_pmod_2 64
+set_io io_pmod_3 63
+set_io io_pmod_4 62
+set_io io_pmod_7 78
+set_io io_pmod_8 79
+set_io io_pmod_9 80
+set_io io_pmod_10 81
