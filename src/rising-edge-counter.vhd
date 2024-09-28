@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity Rising_Edge_Counter is
+entity RisingEdgeCounter is
   generic (COUNT_LIMIT : natural);
   port (
     i_clk    : in  std_logic;
@@ -12,7 +12,7 @@ entity Rising_Edge_Counter is
     o_sel3   : out std_logic);
 end entity;
 
-architecture RTL of Rising_Edge_Counter is
+architecture RTL of RisingEdgeCounter is
 
   -- Create the signal to do the actual counting
   -- Subtract 1, since counter starts at 0
@@ -20,9 +20,9 @@ architecture RTL of Rising_Edge_Counter is
 
 begin
   -- This process increments the counter at rising edges
-  process (i_Clk) is
+  process (i_clk) is
   begin
-    if rising_edge(i_Clk) then
+    if rising_edge(i_clk) then
       if r_counter = COUNT_LIMIT - 1 then
           r_counter <= 0;
       else

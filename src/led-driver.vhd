@@ -1,7 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
  
-entity Led_Driver is
+entity LedDriver is
   port (
     i_sel0  : in  std_logic;
     i_sel1  : in  std_logic;
@@ -13,7 +13,7 @@ entity Led_Driver is
     o_data3 : out std_logic);
 end entity;
  
-architecture RTL of Led_Driver is
+architecture RTL of LedDriver is
 begin
   o_data0 <= '1' when i_sel0 = '1' else '0';
   o_data1 <= '1' when i_sel1 = '1' else '0';
