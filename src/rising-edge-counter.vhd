@@ -5,11 +5,11 @@ use ieee.numeric_std.all;
 entity RisingEdgeCounter is
   generic (COUNT_LIMIT : natural);
   port (
-    i_clk    : in  std_logic;
-    o_sel0   : out std_logic;
-    o_sel1   : out std_logic;
-    o_sel2   : out std_logic;
-    o_sel3   : out std_logic);
+    i_clk  : in  std_logic;
+    o_sel0 : out std_logic;
+    o_sel1 : out std_logic;
+    o_sel2 : out std_logic;
+    o_sel3 : out std_logic);
 end entity;
 
 architecture RTL of RisingEdgeCounter is
