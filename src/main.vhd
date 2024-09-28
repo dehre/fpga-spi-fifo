@@ -25,10 +25,10 @@ architecture RTL of Demux_LFSR_Project_Top is
   -- Count up to <number-of-leds>
   constant COUNT_LIMIT : integer := 4;
 
-  signal w_Sel0: std_logic;
-  signal w_Sel1: std_logic;
-  signal w_Sel2: std_logic;
-  signal w_Sel3: std_logic;
+  signal w_sel0: std_logic;
+  signal w_sel1: std_logic;
+  signal w_sel2: std_logic;
+  signal w_sel3: std_logic;
 
 begin
 --   Toggle_Counter: entity work.Count_And_Toggle
@@ -53,22 +53,22 @@ begin
   Rising_Edge_Counter_Inst: entity work.Rising_Edge_Counter
     generic map (COUNT_LIMIT => COUNT_LIMIT)
     port map (
-      i_Clk    => io_pmod_1,
-      o_Sel0   => w_Sel0,
-      o_Sel1   => w_Sel1,
-      o_Sel2   => w_Sel2,
-      o_Sel3   => w_Sel3
+      i_clk    => io_pmod_1,
+      o_sel0   => w_sel0,
+      o_sel1   => w_sel1,
+      o_sel2   => w_sel2,
+      o_sel3   => w_sel3
     );
 
   Led_Driver_Inst: entity work.Led_Driver
     port map (
-      i_Sel0  => w_Sel0,
-      i_Sel1  => w_Sel1,
-      i_Sel2  => w_Sel2,
-      i_Sel3  => w_Sel3,
-      o_Data0 => o_led_1,
-      o_Data1 => o_led_2,
-      o_Data2 => o_led_3,
-      o_Data3 => o_led_4
+      i_sel0  => w_sel0,
+      i_sel1  => w_sel1,
+      i_sel2  => w_sel2,
+      i_sel3  => w_sel3,
+      o_data0 => o_led_1,
+      o_data1 => o_led_2,
+      o_data2 => o_led_3,
+      o_data3 => o_led_4
     );
 end architecture;
