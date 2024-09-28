@@ -12,11 +12,11 @@ use ieee.std_logic_1164.all;
 
 entity Demux_LFSR_Project_Top is
   port (
-    io_PMOD_1  : in  std_logic;
-    o_LED_1    : out std_logic;
-    o_LED_2    : out std_logic;
-    o_LED_3    : out std_logic;
-    o_LED_4    : out std_logic
+    io_pmod_1  : in  std_logic;
+    o_led_1    : out std_logic;
+    o_led_2    : out std_logic;
+    o_led_3    : out std_logic;
+    o_led_4    : out std_logic
   );
 end entity;
 
@@ -53,7 +53,7 @@ begin
   Rising_Edge_Counter_Inst: entity work.Rising_Edge_Counter
     generic map (COUNT_LIMIT => COUNT_LIMIT)
     port map (
-      i_Clk    => io_PMOD_1,
+      i_Clk    => io_pmod_1,
       o_Sel0   => w_Sel0,
       o_Sel1   => w_Sel1,
       o_Sel2   => w_Sel2,
@@ -66,9 +66,9 @@ begin
       i_Sel1  => w_Sel1,
       i_Sel2  => w_Sel2,
       i_Sel3  => w_Sel3,
-      o_Data0 => o_LED_1,
-      o_Data1 => o_LED_2,
-      o_Data2 => o_LED_3,
-      o_Data3 => o_LED_4
+      o_Data0 => o_led_1,
+      o_Data1 => o_led_2,
+      o_Data2 => o_led_3,
+      o_Data3 => o_led_4
     );
 end architecture;
