@@ -8,18 +8,13 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.types.all;
 
--- TODO LORIS: rename top entity
-entity LedCounter is
+entity DisplayCounter is
   -- Inputs/Outputs for the top module.
   port (
     io_pmod_1    : in  std_logic;  -- Clock signal from PMOD pin 1
-    o_led_1      : out std_logic;  -- Output to onboard LED 1
-    o_led_2      : out std_logic;  -- Output to onboard LED 2
-    o_led_3      : out std_logic;  -- Output to onboard LED 3
-    o_led_4      : out std_logic;  -- Output to onboard LED 4
-    o_segment0_a : out std_logic;
-    o_segment0_b : out std_logic;
-    o_segment0_c : out std_logic;
+    o_segment0_a : out std_logic;  -- Output to segment_a of display_0
+    o_segment0_b : out std_logic;  -- TODO LORIS
+    o_segment0_c : out std_logic;  -- Output to onboard LED 4
     o_segment0_d : out std_logic;
     o_segment0_e : out std_logic;
     o_segment0_f : out std_logic;
@@ -33,9 +28,9 @@ entity LedCounter is
     o_segment1_g : out std_logic);
 end entity;
 
-architecture RTL of LedCounter is
+architecture RTL of DisplayCounter is
 
-  -- Wires connecting the two modules RisingEdgeCounter and DisplayDriver.
+  -- Wires connecting the two modules RisingEdgeDecimalCounter and DisplayDriver.
   signal w_digit0 : t_decimal_digit;
   signal w_digit1 : t_decimal_digit;
 
