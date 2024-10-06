@@ -12,8 +12,8 @@ use work.types.all;
 entity RisingEdgeCounter is
   port (
     i_clk  : in  std_logic;
-    o_segment0_digit: out t_decimal_digit;
-    o_segment1_digit: out t_decimal_digit);
+    o_digit0: out t_decimal_digit;
+    o_digit1: out t_decimal_digit);
 end entity;
 
 architecture RTL of RisingEdgeCounter is
@@ -21,8 +21,8 @@ architecture RTL of RisingEdgeCounter is
   -- TODO LORIS: update comment
   -- Register storing the number of rising edges,
   -- from 0 to (<onboard-leds-count> - 1).
-  signal r_count_segment0 : natural range 0 to 9;
-  signal r_count_segment1 : natural range 0 to 9;
+  signal r_count_digit0 : natural range 0 to 9;
+  signal r_count_digit1 : natural range 0 to 9;
 
 begin
   process(i_clk) is
@@ -30,72 +30,72 @@ begin
     if rising_edge(i_clk) then
 
       -- if count==99:
-      if r_count_segment0 = 9 and r_count_segment1 = 9 then
-        r_count_segment0 <= 0;
-        r_count_segment1 <= 0;
+      if r_count_digit0 = 9 and r_count_digit1 = 9 then
+        r_count_digit0 <= 0;
+        r_count_digit1 <= 0;
 
       -- if count%10==9:
-      elsif r_count_segment0 = 9 then
-        r_count_segment0 <= 0;
-        r_count_segment1 <= r_count_segment1 + 1;
+      elsif r_count_digit0 = 9 then
+        r_count_digit0 <= 0;
+        r_count_digit1 <= r_count_digit1 + 1;
 
       -- else:
       else 
-        r_count_segment0 <= r_count_segment0 + 1;
+        r_count_digit0 <= r_count_digit0 + 1;
 
       end if;
     end if;
   end process;
 
-  process(r_count_segment0)
+  process(r_count_digit0)
   begin
-    case r_count_segment0 is
+    case r_count_digit0 is
       when 0 =>
-        o_segment0_digit <= t_decimal_digit'(ZERO);
+        o_digit0 <= t_decimal_digit'(ZERO);
       when 1 =>
-        o_segment0_digit <= t_decimal_digit'(ONE);
+        o_digit0 <= t_decimal_digit'(ONE);
       when 2 =>
-        o_segment0_digit <= t_decimal_digit'(TWO);
+        o_digit0 <= t_decimal_digit'(TWO);
       when 3 =>
-        o_segment0_digit <= t_decimal_digit'(THREE);
+        o_digit0 <= t_decimal_digit'(THREE);
       when 4 =>
-        o_segment0_digit <= t_decimal_digit'(FOUR);
+        o_digit0 <= t_decimal_digit'(FOUR);
       when 5 =>
-        o_segment0_digit <= t_decimal_digit'(FIVE);
+        o_digit0 <= t_decimal_digit'(FIVE);
       when 6 =>
-        o_segment0_digit <= t_decimal_digit'(SIX);
+        o_digit0 <= t_decimal_digit'(SIX);
       when 7 =>
-        o_segment0_digit <= t_decimal_digit'(SEVEN);
+        o_digit0 <= t_decimal_digit'(SEVEN);
       when 8 =>
-        o_segment0_digit <= t_decimal_digit'(EIGHT);
+        o_digit0 <= t_decimal_digit'(EIGHT);
       when 9 =>
-        o_segment0_digit <= t_decimal_digit'(NINE);
+        o_digit0 <= t_decimal_digit'(NINE);
     end case;
   end process;
 
-  process(r_count_segment1)
+  process(r_count_digit1)
   begin
-    case r_count_segment1 is
+    case r_count_digit1 is
       when 0 =>
-        o_segment1_digit <= t_decimal_digit'(ZERO);
+        o_digit1 <= t_decimal_digit'(ZERO);
       when 1 =>
-        o_segment1_digit <= t_decimal_digit'(ONE);
+        o_digit1 <= t_decimal_digit'(ONE);
       when 2 =>
-        o_segment1_digit <= t_decimal_digit'(TWO);
+        o_digit1 <= t_decimal_digit'(TWO);
       when 3 =>
-        o_segment1_digit <= t_decimal_digit'(THREE);
+        o_digit1 <= t_decimal_digit'(THREE);
       when 4 =>
-        o_segment1_digit <= t_decimal_digit'(FOUR);
+        o_digit1 <= t_decimal_digit'(FOUR);
       when 5 =>
-        o_segment1_digit <= t_decimal_digit'(FIVE);
+        o_digit1 <= t_decimal_digit'(FIVE);
       when 6 =>
-        o_segment1_digit <= t_decimal_digit'(SIX);
+        o_digit1 <= t_decimal_digit'(SIX);
       when 7 =>
-        o_segment1_digit <= t_decimal_digit'(SEVEN);
+        o_digit1 <= t_decimal_digit'(SEVEN);
       when 8 =>
-        o_segment1_digit <= t_decimal_digit'(EIGHT);
+        o_digit1 <= t_decimal_digit'(EIGHT);
       when 9 =>
-        o_segment1_digit <= t_decimal_digit'(NINE);
+        o_digit1 <= t_decimal_digit'(NINE);
     end case;
   end process;
 
