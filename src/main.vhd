@@ -6,15 +6,22 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.custom_types.all;
 
 entity LedCounter is
   -- Inputs/Outputs for the top module.
   port (
-    io_pmod_1 : in  std_logic;  -- Clock signal from PMOD pin 1
-    o_led_1   : out std_logic;  -- Output to onboard LED 1
-    o_led_2   : out std_logic;  -- Output to onboard LED 2
-    o_led_3   : out std_logic;  -- Output to onboard LED 3
-    o_led_4   : out std_logic); -- Output to onboard LED 4
+    io_pmod_1    : in  std_logic;  -- Clock signal from PMOD pin 1
+    o_led_1      : out std_logic;  -- Output to onboard LED 1
+    o_led_2      : out std_logic;  -- Output to onboard LED 2
+    o_led_3      : out std_logic;  -- Output to onboard LED 3
+    o_led_4      : out std_logic;  -- Output to onboard LED 4
+    o_segment1_a : out std_logic;
+    o_segment1_b : out std_logic;
+    o_segment1_c : out std_logic;
+    o_segment1_d : out std_logic;
+    o_segment1_e : out std_logic;
+    o_segment1_f : out std_logic);
 end entity;
 
 architecture RTL of LedCounter is
@@ -52,5 +59,15 @@ begin
       o_data1 => o_led_2,
       o_data2 => o_led_3,
       o_data3 => o_led_4);
+
+  DisplayDriverInstance: entity work.DisplayDriver
+    port map (
+      i_decimal_digit => SEVEN,
+      o_segment_a     => o_segment1_a,
+      o_segment_b     => o_segment1_b,
+      o_segment_c     => o_segment1_c,
+      o_segment_d     => o_segment1_d,
+      o_segment_e     => o_segment1_e,
+      o_segment_f     => o_segment1_f);
 
 end architecture;
