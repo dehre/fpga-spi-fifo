@@ -21,7 +21,8 @@ entity LedCounter is
     o_segment1_c : out std_logic;
     o_segment1_d : out std_logic;
     o_segment1_e : out std_logic;
-    o_segment1_f : out std_logic);
+    o_segment1_f : out std_logic;
+    o_segment1_g : out std_logic);
 end entity;
 
 architecture RTL of LedCounter is
@@ -68,6 +69,7 @@ begin
       o_segment_c     => o_segment1_c,
       o_segment_d     => o_segment1_d,
       o_segment_e     => o_segment1_e,
-      o_segment_f     => o_segment1_f);
+      o_segment_f     => o_segment1_f,
+      o_segment_g     => o_segment1_g);
 
 end architecture;
