@@ -10,6 +10,9 @@ use work.types.all;
 
 -- TODO LORIS: rename pins for segment0 and segment1
 
+-- TODO LORIS: segment1 and segment2 are display1 and display0
+
+-- TODO LORIS: rename top entity
 entity LedCounter is
   -- Inputs/Outputs for the top module.
   port (
@@ -24,48 +27,37 @@ entity LedCounter is
     o_segment1_d : out std_logic;
     o_segment1_e : out std_logic;
     o_segment1_f : out std_logic;
-    o_segment1_g : out std_logic);
+    o_segment1_g : out std_logic;
+    o_segment2_a : out std_logic;
+    o_segment2_b : out std_logic;
+    o_segment2_c : out std_logic;
+    o_segment2_d : out std_logic;
+    o_segment2_e : out std_logic;
+    o_segment2_f : out std_logic;
+    o_segment2_g : out std_logic);
 end entity;
 
 architecture RTL of LedCounter is
 
-  -- Count up to 4 (the number of onboard LEDs).
-  constant COUNT_LIMIT : natural := 4;
-
-  -- Wires connecting the two modules RisingEdgeCounter and LedDriver.
-  signal w_sel0 : std_logic;
-  signal w_sel1 : std_logic;
-  signal w_sel2 : std_logic;
-  signal w_sel3 : std_logic;
+  -- Wires connecting the two modules RisingEdgeCounter and DisplayDriver.
+  signal w_segment0_digit : t_decimal_digit;
+  signal w_segment1_digit : t_decimal_digit;
 
 begin
   -- Module tracking the number of rising edges on pmod_1 in a local
   -- register, and activating the corresponding output signals.
   RisingEdgeCounterInstance: entity work.RisingEdgeCounter
-    generic map (COUNT_LIMIT => COUNT_LIMIT)
     port map (
       i_clk  => io_pmod_1,
-      o_sel0 => w_sel0,
-      o_sel1 => w_sel1,
-      o_sel2 => w_sel2,
-      o_sel3 => w_sel3);
+      o_segment0_digit => w_segment0_digit,
+      o_segment1_digit => w_segment1_digit);
 
   -- Module activating the correct LED based on the control signals.
   -- A module is overkill here, but I wanted to experiment with wires.
-  LedDriverInstance: entity work.LedDriver
+  -- TODO LORIS: refactor comment
+  Display0DriverInstance: entity work.DisplayDriver
     port map (
-      i_sel0  => w_sel0,
-      i_sel1  => w_sel1,
-      i_sel2  => w_sel2,
-      i_sel3  => w_sel3,
-      o_data0 => o_led_1,
-      o_data1 => o_led_2,
-      o_data2 => o_led_3,
-      o_data3 => o_led_4);
-
-  DisplayDriverInstance: entity work.DisplayDriver
-    port map (
-      i_decimal_digit => t_decimal_digit'(SEVEN),
+      i_decimal_digit => w_segment0_digit,
       o_segment_a     => o_segment1_a,
       o_segment_b     => o_segment1_b,
       o_segment_c     => o_segment1_c,
@@ -73,5 +65,16 @@ begin
       o_segment_e     => o_segment1_e,
       o_segment_f     => o_segment1_f,
       o_segment_g     => o_segment1_g);
+
+  Display1DriverInstance: entity work.DisplayDriver
+    port map (
+      i_decimal_digit => w_segment1_digit,
+      o_segment_a     => o_segment2_a,
+      o_segment_b     => o_segment2_b,
+      o_segment_c     => o_segment2_c,
+      o_segment_d     => o_segment2_d,
+      o_segment_e     => o_segment2_e,
+      o_segment_f     => o_segment2_f,
+      o_segment_g     => o_segment2_g);
 
 end architecture;
