@@ -24,25 +24,25 @@ begin
   begin
     case i_decimal_digit is
       when ZERO =>
-        r_hex_encoding <= not X"3F";
+        r_hex_encoding <= not x"3F"; -- invert needed
       when ONE =>
-        r_hex_encoding <= not X"06";
+        r_hex_encoding <= not x"06";
       when TWO =>
-        r_hex_encoding <= not X"5B";
+        r_hex_encoding <= not x"5B";
       when THREE =>
-        r_hex_encoding <= not X"4F";
+        r_hex_encoding <= not x"4F";
       when FOUR =>
-        r_hex_encoding <= not X"66";
+        r_hex_encoding <= not x"66";
       when FIVE =>
-        r_hex_encoding <= not X"6D";
+        r_hex_encoding <= not x"6D";
       when SIX =>
-        r_hex_encoding <= not X"7D";
+        r_hex_encoding <= not x"7D";
       when SEVEN =>
-        r_hex_encoding <= not X"07";
+        r_hex_encoding <= not x"07";
       when EIGHT =>
-        r_hex_encoding <= not X"7F";
+        r_hex_encoding <= not x"7F";
       when NINE =>
-        r_hex_encoding <= not X"67";
+        r_hex_encoding <= not x"67";
     end case;
   end process;
 
