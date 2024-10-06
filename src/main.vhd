@@ -42,7 +42,7 @@ architecture RTL of LedCounter is
 begin
   -- Module tracking the number of rising edges on pmod_1 in a local
   -- register, and activating the corresponding output signals.
-  RisingEdgeCounterInstance: entity work.RisingEdgeCounter
+  RisingEdgeDecimalCounterInstance: entity work.RisingEdgeDecimalCounter
     port map (
       i_clk  => io_pmod_1,
       o_digit0 => w_digit0,

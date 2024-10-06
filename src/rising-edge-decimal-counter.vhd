@@ -3,20 +3,19 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.types.all;
 
--- TODO LORIS: rename RisingEdgeDecimalCounter
 -- TODO LORIS: maybe work directly with BCD values, and let
 --      this counter count to 9 as already done. Create a type
 --      for the BCD number?
 
 -- TODO LORIS: rename o_display0_digit
-entity RisingEdgeCounter is
+entity RisingEdgeDecimalCounter is
   port (
     i_clk  : in  std_logic;
     o_digit0: out t_decimal_digit;
     o_digit1: out t_decimal_digit);
 end entity;
 
-architecture RTL of RisingEdgeCounter is
+architecture RTL of RisingEdgeDecimalCounter is
 
   -- TODO LORIS: update comment
   -- Register storing the number of rising edges,
