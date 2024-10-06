@@ -8,6 +8,8 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.types.all;
 
+-- TODO LORIS: rename pins for segment0 and segment1
+
 entity LedCounter is
   -- Inputs/Outputs for the top module.
   port (
