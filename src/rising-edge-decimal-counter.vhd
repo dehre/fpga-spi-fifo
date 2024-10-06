@@ -7,12 +7,11 @@ use work.types.all;
 --      this counter count to 9 as already done. Create a type
 --      for the BCD number?
 
--- TODO LORIS: rename o_display0_digit
 entity RisingEdgeDecimalCounter is
   port (
     i_clk  : in  std_logic;
-    o_digit0: out t_decimal_digit;
-    o_digit1: out t_decimal_digit);
+    o_display0_digit: out t_decimal_digit;
+    o_display1_digit: out t_decimal_digit);
 end entity;
 
 architecture RTL of RisingEdgeDecimalCounter is
@@ -20,8 +19,8 @@ architecture RTL of RisingEdgeDecimalCounter is
   -- TODO LORIS: update comment
   -- Register storing the number of rising edges,
   -- from 0 to (<onboard-leds-count> - 1).
-  signal r_count_digit0 : natural range 0 to 9;
-  signal r_count_digit1 : natural range 0 to 9;
+  signal r_display0_count : natural range 0 to 9;
+  signal r_display1_count : natural range 0 to 9;
 
 begin
   process(i_clk) is
@@ -29,72 +28,72 @@ begin
     if rising_edge(i_clk) then
 
       -- if count==99:
-      if r_count_digit0 = 9 and r_count_digit1 = 9 then
-        r_count_digit0 <= 0;
-        r_count_digit1 <= 0;
+      if r_display0_count = 9 and r_display1_count = 9 then
+        r_display0_count <= 0;
+        r_display1_count <= 0;
 
       -- if count%10==9:
-      elsif r_count_digit0 = 9 then
-        r_count_digit0 <= 0;
-        r_count_digit1 <= r_count_digit1 + 1;
+      elsif r_display0_count = 9 then
+        r_display0_count <= 0;
+        r_display1_count <= r_display1_count + 1;
 
       -- else:
       else 
-        r_count_digit0 <= r_count_digit0 + 1;
+        r_display0_count <= r_display0_count + 1;
 
       end if;
     end if;
   end process;
 
-  process(r_count_digit0)
+  process(r_display0_count)
   begin
-    case r_count_digit0 is
+    case r_display0_count is
       when 0 =>
-        o_digit0 <= t_decimal_digit'(ZERO);
+        o_display0_digit <= t_decimal_digit'(ZERO);
       when 1 =>
-        o_digit0 <= t_decimal_digit'(ONE);
+        o_display0_digit <= t_decimal_digit'(ONE);
       when 2 =>
-        o_digit0 <= t_decimal_digit'(TWO);
+        o_display0_digit <= t_decimal_digit'(TWO);
       when 3 =>
-        o_digit0 <= t_decimal_digit'(THREE);
+        o_display0_digit <= t_decimal_digit'(THREE);
       when 4 =>
-        o_digit0 <= t_decimal_digit'(FOUR);
+        o_display0_digit <= t_decimal_digit'(FOUR);
       when 5 =>
-        o_digit0 <= t_decimal_digit'(FIVE);
+        o_display0_digit <= t_decimal_digit'(FIVE);
       when 6 =>
-        o_digit0 <= t_decimal_digit'(SIX);
+        o_display0_digit <= t_decimal_digit'(SIX);
       when 7 =>
-        o_digit0 <= t_decimal_digit'(SEVEN);
+        o_display0_digit <= t_decimal_digit'(SEVEN);
       when 8 =>
-        o_digit0 <= t_decimal_digit'(EIGHT);
+        o_display0_digit <= t_decimal_digit'(EIGHT);
       when 9 =>
-        o_digit0 <= t_decimal_digit'(NINE);
+        o_display0_digit <= t_decimal_digit'(NINE);
     end case;
   end process;
 
-  process(r_count_digit1)
+  process(r_display1_count)
   begin
-    case r_count_digit1 is
+    case r_display1_count is
       when 0 =>
-        o_digit1 <= t_decimal_digit'(ZERO);
+        o_display1_digit <= t_decimal_digit'(ZERO);
       when 1 =>
-        o_digit1 <= t_decimal_digit'(ONE);
+        o_display1_digit <= t_decimal_digit'(ONE);
       when 2 =>
-        o_digit1 <= t_decimal_digit'(TWO);
+        o_display1_digit <= t_decimal_digit'(TWO);
       when 3 =>
-        o_digit1 <= t_decimal_digit'(THREE);
+        o_display1_digit <= t_decimal_digit'(THREE);
       when 4 =>
-        o_digit1 <= t_decimal_digit'(FOUR);
+        o_display1_digit <= t_decimal_digit'(FOUR);
       when 5 =>
-        o_digit1 <= t_decimal_digit'(FIVE);
+        o_display1_digit <= t_decimal_digit'(FIVE);
       when 6 =>
-        o_digit1 <= t_decimal_digit'(SIX);
+        o_display1_digit <= t_decimal_digit'(SIX);
       when 7 =>
-        o_digit1 <= t_decimal_digit'(SEVEN);
+        o_display1_digit <= t_decimal_digit'(SEVEN);
       when 8 =>
-        o_digit1 <= t_decimal_digit'(EIGHT);
+        o_display1_digit <= t_decimal_digit'(EIGHT);
       when 9 =>
-        o_digit1 <= t_decimal_digit'(NINE);
+        o_display1_digit <= t_decimal_digit'(NINE);
     end case;
   end process;
 
