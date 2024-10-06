@@ -4,14 +4,14 @@ use work.types.all;
  
 entity DisplayDriver is
   port (
-    i_decimal_digit : in  t_decimal_digit;
-    o_segment_a     : out std_logic;
-    o_segment_b     : out std_logic;
-    o_segment_c     : out std_logic;
-    o_segment_d     : out std_logic;
-    o_segment_e     : out std_logic;
-    o_segment_f     : out std_logic;
-    o_segment_g     : out std_logic);
+    i_bcd       : in  t_bcd;
+    o_segment_a : out std_logic;
+    o_segment_b : out std_logic;
+    o_segment_c : out std_logic;
+    o_segment_d : out std_logic;
+    o_segment_e : out std_logic;
+    o_segment_f : out std_logic;
+    o_segment_g : out std_logic);
 end entity;
  
 architecture RTL of DisplayDriver is
@@ -20,29 +20,42 @@ signal r_hex_encoding : std_logic_vector(7 downto 0);
 
 begin
 
-  process(i_decimal_digit)
+  -- Table: https://hosteng.com/dmdhelp/content/instruction_set/SEG_Hex_BCD_to_7_Segment_Display.htm
+  process(i_bcd)
   begin
-    case i_decimal_digit is
-      when t_decimal_digit'(ZERO) =>
+    case i_bcd is
+      when 0 =>
         r_hex_encoding <= not x"3F"; -- invert needed on Go board
-      when t_decimal_digit'(ONE) =>
+      when 1 =>
         r_hex_encoding <= not x"06";
-      when t_decimal_digit'(TWO) =>
+      when 2 =>
         r_hex_encoding <= not x"5B";
-      when t_decimal_digit'(THREE) =>
+      when 3 =>
         r_hex_encoding <= not x"4F";
-      when t_decimal_digit'(FOUR) =>
+      when 4 =>
         r_hex_encoding <= not x"66";
-      when t_decimal_digit'(FIVE) =>
+      when 5 =>
         r_hex_encoding <= not x"6D";
-      when t_decimal_digit'(SIX) =>
+      when 6 =>
         r_hex_encoding <= not x"7D";
-      when t_decimal_digit'(SEVEN) =>
+      when 7 =>
         r_hex_encoding <= not x"07";
-      when t_decimal_digit'(EIGHT) =>
+      when 8 =>
         r_hex_encoding <= not x"7F";
-      when t_decimal_digit'(NINE) =>
+      when 9 =>
         r_hex_encoding <= not x"67";
+      when 10 =>
+        r_hex_encoding <= not x"77";
+      when 11 =>
+        r_hex_encoding <= not x"7c";
+      when 12 =>
+        r_hex_encoding <= not x"39";
+      when 13 =>
+        r_hex_encoding <= not x"5E";
+      when 14 =>
+        r_hex_encoding <= not x"79";
+      when 15 =>
+        r_hex_encoding <= not x"71";
     end case;
   end process;
 

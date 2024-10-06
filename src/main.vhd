@@ -31,8 +31,8 @@ end entity;
 architecture RTL of DisplayCounter is
 
   -- Wires connecting the two modules RisingEdgeDecimalCounter and DisplayDriver.
-  signal w_display0_digit : t_decimal_digit;
-  signal w_display1_digit : t_decimal_digit;
+  signal w_display0_bcd : t_bcd;
+  signal w_display1_bcd : t_bcd;
 
 begin
   -- Module tracking the number of rising edges on pmod_1 in a local
@@ -40,32 +40,32 @@ begin
   RisingEdgeDecimalCounterInstance: entity work.RisingEdgeDecimalCounter
     port map (
       i_clk  => io_pmod_1,
-      o_display0_digit => w_display0_digit,
-      o_display1_digit => w_display1_digit);
+      o_display0_bcd => w_display0_bcd,
+      o_display1_bcd => w_display1_bcd);
 
   -- Module activating the correct LED based on the control signals.
   -- A module is overkill here, but I wanted to experiment with wires.
   -- TODO LORIS: refactor comment
   Display0DriverInstance: entity work.DisplayDriver
     port map (
-      i_decimal_digit => w_display0_digit,
-      o_segment_a     => o_display0_a,
-      o_segment_b     => o_display0_b,
-      o_segment_c     => o_display0_c,
-      o_segment_d     => o_display0_d,
-      o_segment_e     => o_display0_e,
-      o_segment_f     => o_display0_f,
-      o_segment_g     => o_display0_g);
+      i_bcd       => w_display0_bcd,
+      o_segment_a => o_display0_a,
+      o_segment_b => o_display0_b,
+      o_segment_c => o_display0_c,
+      o_segment_d => o_display0_d,
+      o_segment_e => o_display0_e,
+      o_segment_f => o_display0_f,
+      o_segment_g => o_display0_g);
 
   Display1DriverInstance: entity work.DisplayDriver
     port map (
-      i_decimal_digit => w_display1_digit,
-      o_segment_a     => o_display1_a,
-      o_segment_b     => o_display1_b,
-      o_segment_c     => o_display1_c,
-      o_segment_d     => o_display1_d,
-      o_segment_e     => o_display1_e,
-      o_segment_f     => o_display1_f,
-      o_segment_g     => o_display1_g);
+      i_bcd       => w_display1_bcd,
+      o_segment_a => o_display1_a,
+      o_segment_b => o_display1_b,
+      o_segment_c => o_display1_c,
+      o_segment_d => o_display1_d,
+      o_segment_e => o_display1_e,
+      o_segment_f => o_display1_f,
+      o_segment_g => o_display1_g);
 
 end architecture;
