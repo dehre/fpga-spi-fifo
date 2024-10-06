@@ -6,7 +6,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.custom_types.all;
+use work.types.all;
 
 entity LedCounter is
   -- Inputs/Outputs for the top module.
@@ -63,7 +63,7 @@ begin
 
   DisplayDriverInstance: entity work.DisplayDriver
     port map (
-      i_decimal_digit => SEVEN,
+      i_decimal_digit => t_decimal_digit'(SEVEN),
       o_segment_a     => o_segment1_a,
       o_segment_b     => o_segment1_b,
       o_segment_c     => o_segment1_c,

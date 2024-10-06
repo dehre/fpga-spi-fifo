@@ -1,6 +1,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
-use work.custom_types.all;
+use work.types.all;
  
 entity DisplayDriver is
   port (
@@ -23,25 +23,25 @@ begin
   process(i_decimal_digit)
   begin
     case i_decimal_digit is
-      when ZERO =>
-        r_hex_encoding <= not x"3F"; -- invert needed
-      when ONE =>
+      when t_decimal_digit'(ZERO) =>
+        r_hex_encoding <= not x"3F"; -- invert needed on Go board
+      when t_decimal_digit'(ONE) =>
         r_hex_encoding <= not x"06";
-      when TWO =>
+      when t_decimal_digit'(TWO) =>
         r_hex_encoding <= not x"5B";
-      when THREE =>
+      when t_decimal_digit'(THREE) =>
         r_hex_encoding <= not x"4F";
-      when FOUR =>
+      when t_decimal_digit'(FOUR) =>
         r_hex_encoding <= not x"66";
-      when FIVE =>
+      when t_decimal_digit'(FIVE) =>
         r_hex_encoding <= not x"6D";
-      when SIX =>
+      when t_decimal_digit'(SIX) =>
         r_hex_encoding <= not x"7D";
-      when SEVEN =>
+      when t_decimal_digit'(SEVEN) =>
         r_hex_encoding <= not x"07";
-      when EIGHT =>
+      when t_decimal_digit'(EIGHT) =>
         r_hex_encoding <= not x"7F";
-      when NINE =>
+      when t_decimal_digit'(NINE) =>
         r_hex_encoding <= not x"67";
     end case;
   end process;
