@@ -10,20 +10,20 @@ entity DisplayCounter is
   -- Inputs/Outputs for the top module.
   port (
     io_pmod_1    : in  std_logic;  -- Clock signal from PMOD pin 1
-    o_display0_a : out std_logic;  -- Segment A output for display 0
-    o_display0_b : out std_logic;  -- Segment B output for display 0
-    o_display0_c : out std_logic;  -- Segment C output for display 0
-    o_display0_d : out std_logic;  -- Segment D output for display 0
-    o_display0_e : out std_logic;  -- Segment E output for display 0
-    o_display0_f : out std_logic;  -- Segment F output for display 0
-    o_display0_g : out std_logic;  -- Segment G output for display 0
-    o_display1_a : out std_logic;  -- Segment A output for display 1
-    o_display1_b : out std_logic;  -- Segment B output for display 1
-    o_display1_c : out std_logic;  -- Segment C output for display 1
-    o_display1_d : out std_logic;  -- Segment D output for display 1
-    o_display1_e : out std_logic;  -- Segment E output for display 1
-    o_display1_f : out std_logic;  -- Segment F output for display 1
-    o_display1_g : out std_logic); -- Segment G output for display 1
+    o_display0_a : out std_logic;  -- Display 0, segment A
+    o_display0_b : out std_logic;  -- Display 0, segment B
+    o_display0_c : out std_logic;  -- Display 0, segment C
+    o_display0_d : out std_logic;  -- Display 0, segment D
+    o_display0_e : out std_logic;  -- Display 0, segment E
+    o_display0_f : out std_logic;  -- Display 0, segment F
+    o_display0_g : out std_logic;  -- Display 0, segment G
+    o_display1_a : out std_logic;  -- Display 1, segment A
+    o_display1_b : out std_logic;  -- Display 1, segment B
+    o_display1_c : out std_logic;  -- Display 1, segment C
+    o_display1_d : out std_logic;  -- Display 1, segment D
+    o_display1_e : out std_logic;  -- Display 1, segment E
+    o_display1_f : out std_logic;  -- Display 1, segment F
+    o_display1_g : out std_logic); -- Display 1, segment G
 end entity;
 
 architecture RTL of DisplayCounter is
