@@ -1,56 +1,67 @@
 -- PROJECT TOP.
--- Counts the number of rising edges on pin 1 of the PMOD connector.
--- With each rising edge, it turns on the next onboard LED in sequence,
--- continuously cycling from D1 to D4.
+-- Counts the number of rising edges on pin 1 of the PMOD connector,
+-- displaying the count (0-99) on two 7-segment displays.
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity LedCounter is
+entity DisplayCounter is
   -- Inputs/Outputs for the top module.
   port (
-    io_pmod_1 : in  std_logic;  -- Clock signal from PMOD pin 1
-    o_led_1   : out std_logic;  -- Output to onboard LED 1
-    o_led_2   : out std_logic;  -- Output to onboard LED 2
-    o_led_3   : out std_logic;  -- Output to onboard LED 3
-    o_led_4   : out std_logic); -- Output to onboard LED 4
+    io_pmod_1    : in  std_logic;  -- Clock signal from PMOD pin 1
+    o_display0_a : out std_logic;  -- Display 0, segment A
+    o_display0_b : out std_logic;  -- Display 0, segment B
+    o_display0_c : out std_logic;  -- Display 0, segment C
+    o_display0_d : out std_logic;  -- Display 0, segment D
+    o_display0_e : out std_logic;  -- Display 0, segment E
+    o_display0_f : out std_logic;  -- Display 0, segment F
+    o_display0_g : out std_logic;  -- Display 0, segment G
+    o_display1_a : out std_logic;  -- Display 1, segment A
+    o_display1_b : out std_logic;  -- Display 1, segment B
+    o_display1_c : out std_logic;  -- Display 1, segment C
+    o_display1_d : out std_logic;  -- Display 1, segment D
+    o_display1_e : out std_logic;  -- Display 1, segment E
+    o_display1_f : out std_logic;  -- Display 1, segment F
+    o_display1_g : out std_logic); -- Display 1, segment G
 end entity;
 
-architecture RTL of LedCounter is
+architecture RTL of DisplayCounter is
 
-  -- Count up to 4 (the number of onboard LEDs).
-  constant COUNT_LIMIT : natural := 4;
-
-  -- Wires connecting the two modules RisingEdgeCounter and LedDriver.
-  signal w_sel0 : std_logic;
-  signal w_sel1 : std_logic;
-  signal w_sel2 : std_logic;
-  signal w_sel3 : std_logic;
+  -- Wires connecting the two modules RisingEdgeDecimalCounter and DisplayDriver.
+  signal w_ones_bcd : std_logic_vector(3 downto 0);
+  signal w_tens_bcd : std_logic_vector(3 downto 0);
 
 begin
-  -- Module tracking the number of rising edges on pmod_1 in a local
-  -- register, and activating the corresponding output signals.
-  RisingEdgeCounterInstance: entity work.RisingEdgeCounter
-    generic map (COUNT_LIMIT => COUNT_LIMIT)
+  -- Module counting the number of rising edges on pmod_1.
+  -- Outputs a 2-digits BCD value (0 to 99).
+  RisingEdgeDecimalCounterInstance: entity work.RisingEdgeDecimalCounter
     port map (
-      i_clk  => io_pmod_1,
-      o_sel0 => w_sel0,
-      o_sel1 => w_sel1,
-      o_sel2 => w_sel2,
-      o_sel3 => w_sel3);
+      i_clk      => io_pmod_1,
+      o_ones_bcd => w_ones_bcd,
+      o_tens_bcd => w_tens_bcd);
 
-  -- Module activating the correct LED based on the control signals.
-  -- A module is overkill here, but I wanted to experiment with wires.
-  LedDriverInstance: entity work.LedDriver
+  -- Modules driving the two 7-segments displays.
+  Display0DriverInstance: entity work.DisplayDriver
     port map (
-      i_sel0  => w_sel0,
-      i_sel1  => w_sel1,
-      i_sel2  => w_sel2,
-      i_sel3  => w_sel3,
-      o_data0 => o_led_1,
-      o_data1 => o_led_2,
-      o_data2 => o_led_3,
-      o_data3 => o_led_4);
+      i_bcd       => w_ones_bcd,
+      o_segment_a => o_display0_a,
+      o_segment_b => o_display0_b,
+      o_segment_c => o_display0_c,
+      o_segment_d => o_display0_d,
+      o_segment_e => o_display0_e,
+      o_segment_f => o_display0_f,
+      o_segment_g => o_display0_g);
+
+  Display1DriverInstance: entity work.DisplayDriver
+    port map (
+      i_bcd       => w_tens_bcd,
+      o_segment_a => o_display1_a,
+      o_segment_b => o_display1_b,
+      o_segment_c => o_display1_c,
+      o_segment_d => o_display1_d,
+      o_segment_e => o_display1_e,
+      o_segment_f => o_display1_f,
+      o_segment_g => o_display1_g);
 
 end architecture;
