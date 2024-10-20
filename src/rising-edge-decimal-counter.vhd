@@ -41,8 +41,6 @@ begin
     end if;
   end process;
 
-  -- TODO LORIS: to I need this to_unsigned?
-  -- TODO LORIS: can I take the length of the type instead?
   o_ones_bcd <= std_logic_vector(to_unsigned(r_ones_count, o_ones_bcd'length));
   o_tens_bcd <= std_logic_vector(to_unsigned(r_tens_count, o_tens_bcd'length));
 
