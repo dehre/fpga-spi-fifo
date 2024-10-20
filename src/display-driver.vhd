@@ -1,10 +1,9 @@
 library ieee;
 use ieee.std_logic_1164.all;
-use work.types.all;
  
 entity DisplayDriver is
   port (
-    i_bcd       : in  t_bcd;
+    i_bcd       : in  std_logic_vector(3 downto 0);
     o_segment_a : out std_logic;
     o_segment_b : out std_logic;
     o_segment_c : out std_logic;
@@ -16,7 +15,7 @@ end entity;
  
 architecture RTL of DisplayDriver is
 
-signal r_hex_encoding : std_logic_vector(7 downto 0);
+  signal r_hex_encoding : std_logic_vector(7 downto 0);
 
 begin
 

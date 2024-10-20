@@ -1,14 +1,13 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.types.all;
 
 -- TODO LORIS: explain in comment
 entity RisingEdgeDecimalCounter is
   port (
-    i_clk  : in  std_logic;
-    o_ones_bcd: out t_bcd;
-    o_tens_bcd: out t_bcd);
+    i_clk     : in  std_logic;
+    o_ones_bcd: out std_logic_vector(3 downto 0);
+    o_tens_bcd: out std_logic_vector(3 downto 0));
 end entity;
 
 architecture RTL of RisingEdgeDecimalCounter is

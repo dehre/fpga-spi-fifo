@@ -6,7 +6,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.types.all;
 
 entity DisplayCounter is
   -- Inputs/Outputs for the top module.
@@ -31,15 +30,15 @@ end entity;
 architecture RTL of DisplayCounter is
 
   -- Wires connecting the two modules RisingEdgeDecimalCounter and DisplayDriver.
-  signal w_ones_bcd : t_bcd;
-  signal w_tens_bcd : t_bcd;
+  signal w_ones_bcd : std_logic_vector(3 downto 0);
+  signal w_tens_bcd : std_logic_vector(3 downto 0);
 
 begin
   -- Module tracking the number of rising edges on pmod_1 in a local
   -- register, and activating the corresponding output signals.
   RisingEdgeDecimalCounterInstance: entity work.RisingEdgeDecimalCounter
     port map (
-      i_clk  => io_pmod_1,
+      i_clk      => io_pmod_1,
       o_ones_bcd => w_ones_bcd,
       o_tens_bcd => w_tens_bcd);
 
