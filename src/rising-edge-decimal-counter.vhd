@@ -2,7 +2,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
--- TODO LORIS: explain in comment
 entity RisingEdgeDecimalCounter is
   port (
     i_clk     : in  std_logic;
@@ -12,9 +11,9 @@ end entity;
 
 architecture RTL of RisingEdgeDecimalCounter is
 
-  -- TODO LORIS: update comment
-  -- Register storing the number of rising edges,
-  -- from 0 to (<onboard-leds-count> - 1).
+  -- Registers storing the number of rising edges from 0 to 99.
+  -- Ones and tens has been kept separate to ease their conversion
+  -- into BCD-values.
   signal r_ones_count : natural range 0 to 9;
   signal r_tens_count : natural range 0 to 9;
 

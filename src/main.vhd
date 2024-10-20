@@ -1,7 +1,6 @@
 -- PROJECT TOP.
--- Counts the number of rising edges on pin 1 of the PMOD connector.
--- With each rising edge, it turns on the next onboard LED in sequence,
--- continuously cycling from D1 to D4.
+-- Counts the number of rising edges on pin 1 of the PMOD connector,
+-- displaying the count (0-99) on two 7-segment displays.
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -11,20 +10,20 @@ entity DisplayCounter is
   -- Inputs/Outputs for the top module.
   port (
     io_pmod_1    : in  std_logic;  -- Clock signal from PMOD pin 1
-    o_display0_a : out std_logic;  -- Output to segment_a of display_0
-    o_display0_b : out std_logic;  -- TODO LORIS
-    o_display0_c : out std_logic;  -- Output to onboard LED 4
-    o_display0_d : out std_logic;
-    o_display0_e : out std_logic;
-    o_display0_f : out std_logic;
-    o_display0_g : out std_logic;
-    o_display1_a : out std_logic;
-    o_display1_b : out std_logic;
-    o_display1_c : out std_logic;
-    o_display1_d : out std_logic;
-    o_display1_e : out std_logic;
-    o_display1_f : out std_logic;
-    o_display1_g : out std_logic);
+    o_display0_a : out std_logic;  -- Segment A output for display 0
+    o_display0_b : out std_logic;  -- Segment B output for display 0
+    o_display0_c : out std_logic;  -- Segment C output for display 0
+    o_display0_d : out std_logic;  -- Segment D output for display 0
+    o_display0_e : out std_logic;  -- Segment E output for display 0
+    o_display0_f : out std_logic;  -- Segment F output for display 0
+    o_display0_g : out std_logic;  -- Segment G output for display 0
+    o_display1_a : out std_logic;  -- Segment A output for display 1
+    o_display1_b : out std_logic;  -- Segment B output for display 1
+    o_display1_c : out std_logic;  -- Segment C output for display 1
+    o_display1_d : out std_logic;  -- Segment D output for display 1
+    o_display1_e : out std_logic;  -- Segment E output for display 1
+    o_display1_f : out std_logic;  -- Segment F output for display 1
+    o_display1_g : out std_logic); -- Segment G output for display 1
 end entity;
 
 architecture RTL of DisplayCounter is
@@ -34,17 +33,15 @@ architecture RTL of DisplayCounter is
   signal w_tens_bcd : std_logic_vector(3 downto 0);
 
 begin
-  -- Module tracking the number of rising edges on pmod_1 in a local
-  -- register, and activating the corresponding output signals.
+  -- Module counting the number of rising edges on pmod_1.
+  -- Outputs a 2-digits BCD value (0 to 99).
   RisingEdgeDecimalCounterInstance: entity work.RisingEdgeDecimalCounter
     port map (
       i_clk      => io_pmod_1,
       o_ones_bcd => w_ones_bcd,
       o_tens_bcd => w_tens_bcd);
 
-  -- Module activating the correct LED based on the control signals.
-  -- A module is overkill here, but I wanted to experiment with wires.
-  -- TODO LORIS: refactor comment
+  -- Modules driving the two 7-segments displays.
   Display0DriverInstance: entity work.DisplayDriver
     port map (
       i_bcd       => w_ones_bcd,
