@@ -42,7 +42,7 @@ begin
       when 8 =>
         r_hex_encoding <= not x"7F";
       when 9 =>
-        r_hex_encoding <= not x"67";
+        r_hex_encoding <= not x"6F";
       when 10 =>
         r_hex_encoding <= not x"77";
       when 11 =>
