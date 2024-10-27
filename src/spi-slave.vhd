@@ -42,7 +42,11 @@ entity SPI_Slave is
     i_SPI_Clk  : in  std_logic;
     o_SPI_MISO : out std_logic;
     i_SPI_MOSI : in  std_logic;
-    i_SPI_CS_n : in  std_logic   -- active low
+    i_SPI_CS_n : in  std_logic;   -- active low
+
+    -- Inspecting
+    o_logicanalyzer_a: out std_logic
+    -- o_logicanalyzer_b: out std_logic
   );
 end SPI_Slave;
 
@@ -103,6 +107,7 @@ begin
       if r_RX_Bit_Count = "111" then
         r_RX_Done <= '1';
         r_RX_Byte <= r_Temp_RX_Byte(6 downto 0) & i_SPI_MOSI;
+        o_logicanalyzer_a <= '1';
 
       -- TODO LORIS: just else?
       -- it seems r_RX_Done is kept high for a few cycles just to make sure we
@@ -112,6 +117,7 @@ begin
       -- you set it to 1).
       elsif r_RX_Bit_Count = "010" then
         r_RX_Done <= '0';
+        o_logicanalyzer_a <= '0';
       end if;
     end if;
   end process;
@@ -136,9 +142,11 @@ begin
 
       if r3_RX_Done = '0' and r2_RX_Done = '1' then
         o_RX_DV <= '1';  -- Pulse Data Valid 1 clock cycle
+        -- o_logicanalyzer_b <= '1';
         o_RX_Byte <= r_RX_Byte;
       else
         o_RX_DV <= '0';
+        -- o_logicanalyzer_b <= '0';
       end if;
     end if;
   end process;
