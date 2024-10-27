@@ -6,62 +6,102 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity DisplayCounter is
-  -- Inputs/Outputs for the top module.
+entity SPIRepeater is
   port (
-    io_pmod_1    : in  std_logic;  -- Clock signal from PMOD pin 1
-    o_display0_a : out std_logic;  -- Display 0, segment A
-    o_display0_b : out std_logic;  -- Display 0, segment B
-    o_display0_c : out std_logic;  -- Display 0, segment C
-    o_display0_d : out std_logic;  -- Display 0, segment D
-    o_display0_e : out std_logic;  -- Display 0, segment E
-    o_display0_f : out std_logic;  -- Display 0, segment F
-    o_display0_g : out std_logic;  -- Display 0, segment G
-    o_display1_a : out std_logic;  -- Display 1, segment A
-    o_display1_b : out std_logic;  -- Display 1, segment B
-    o_display1_c : out std_logic;  -- Display 1, segment C
-    o_display1_d : out std_logic;  -- Display 1, segment D
-    o_display1_e : out std_logic;  -- Display 1, segment E
-    o_display1_f : out std_logic;  -- Display 1, segment F
-    o_display1_g : out std_logic); -- Display 1, segment G
+    -- DEBUGGING OUTPUTS
+    io_pmod_7    : out  std_logic; 
+    io_pmod_8    : out  std_logic;
+    io_pmod_9    : out  std_logic;
+
+    -- Control/Data Signals
+
+    -- TODO LORIS: add pull-up resistor to schematics
+    -- i_Rst_L    : in  std_logic;    -- FPGA Reset, active low
+    io_pmod_10    : in  std_logic;  -- FPGA Reset, active low
+
+    i_clk      : in  std_logic;    -- FPGA Clock
+
+    -- SPI Interface
+
+    -- i_SPI_Clk  : in  std_logic;
+    io_pmod_1  : in  std_logic; -- SPI Clock
+
+    -- o_SPI_MISO : out std_logic     -- Master In, Slave Out
+    io_pmod_2 : out std_logic;     -- Master In, Slave Out
+
+    -- i_SPI_MOSI : in  std_logic;    -- Master Out, Slave In
+    io_pmod_3 : in  std_logic;    -- Master Out, Slave In
+
+    -- i_SPI_CS_n : in  std_logic;    -- Chip Select, active low
+    io_pmod_4 : in  std_logic);    -- Slave Select, active low
 end entity;
 
-architecture RTL of DisplayCounter is
+architecture RTL of SPIRepeater is
 
-  -- Wires connecting the two modules RisingEdgeDecimalCounter and DisplayDriver.
-  signal w_ones_bcd : std_logic_vector(3 downto 0);
-  signal w_tens_bcd : std_logic_vector(3 downto 0);
+  -- Wires for renaming pmod pins
+  -- TODO LORIS: maybe rename pin-constraints directly
+  signal wi_Rst_L: std_logic;
+  signal wi_SPI_Clk: std_logic;
+  signal wo_SPI_MISO: std_logic;
+  signal wi_SPI_MOSI: std_logic;
+  signal wi_SPI_CS_n: std_logic;
+
+  -- Internal signals
+  signal w_RX_DV    : std_logic := '0';
+  signal w_RX_Byte  : std_logic_vector(7 downto 0) := (others => '0');
+  signal w_TX_DV    : std_logic := '0';
+  signal w_TX_Byte  : std_logic_vector(7 downto 0) := (others => '0');
+
+  -- Debugging
+  signal r_clk_half : std_logic;
 
 begin
-  -- Module counting the number of rising edges on pmod_1.
-  -- Outputs a 2-digits BCD value (0 to 99).
-  RisingEdgeDecimalCounterInstance: entity work.RisingEdgeDecimalCounter
-    port map (
-      i_clk      => io_pmod_1,
-      o_ones_bcd => w_ones_bcd,
-      o_tens_bcd => w_tens_bcd);
 
-  -- Modules driving the two 7-segments displays.
-  Display0DriverInstance: entity work.DisplayDriver
-    port map (
-      i_bcd       => w_ones_bcd,
-      o_segment_a => o_display0_a,
-      o_segment_b => o_display0_b,
-      o_segment_c => o_display0_c,
-      o_segment_d => o_display0_d,
-      o_segment_e => o_display0_e,
-      o_segment_f => o_display0_f,
-      o_segment_g => o_display0_g);
+  -- Renaming inputs/outputs for clarity
+  wi_Rst_L    <= io_pmod_10;
+  wi_SPI_Clk  <= io_pmod_1;
+  io_pmod_2 <= wo_SPI_MISO;
+  wi_SPI_MOSI <= io_pmod_3;
+  wi_SPI_CS_n <= io_pmod_4;
 
-  Display1DriverInstance: entity work.DisplayDriver
+  process (i_clk, r_clk_half)
+  begin
+    if rising_edge(i_clk) then
+      r_clk_half <= not r_clk_half;
+    end if;
+  end process;
+
+  -- Instantiate the SPI_Slave component
+  SpiSlaveInstance: entity work.SPI_Slave
+    generic map (SPI_MODE => 0)
     port map (
-      i_bcd       => w_tens_bcd,
-      o_segment_a => o_display1_a,
-      o_segment_b => o_display1_b,
-      o_segment_c => o_display1_c,
-      o_segment_d => o_display1_d,
-      o_segment_e => o_display1_e,
-      o_segment_f => o_display1_f,
-      o_segment_g => o_display1_g);
+      o_debug_a => io_pmod_7,
+      o_debug_b => io_pmod_8,
+      o_debug_c => io_pmod_9,
+
+      i_Clk      => i_clk,
+      i_Rst_L    => wi_Rst_L,
+      i_SPI_Clk  => wi_SPI_Clk,
+      o_SPI_MISO => wo_SPI_MISO,
+      i_SPI_MOSI => wi_SPI_MOSI,
+      i_SPI_CS_n => wi_SPI_CS_n,
+      o_RX_DV    => w_RX_DV,
+      o_RX_Byte  => w_RX_Byte,
+      i_TX_DV    => w_TX_DV,
+      i_TX_Byte  => w_TX_Byte);
+
+    
+    process(i_clk)
+    begin
+        if rising_edge(i_clk) then
+            -- When SPI_Slave signals that a byte has been received (w_RX_DV = '1')
+            if w_RX_DV = '1' then
+                w_TX_Byte <= w_RX_Byte;  -- Set TX byte to the received byte
+                w_TX_DV   <= '1';        -- Signal data valid for TX
+            else
+                w_TX_DV   <= '0';        -- Clear data valid for TX
+            end if;
+        end if;
+    end process;
 
 end architecture;

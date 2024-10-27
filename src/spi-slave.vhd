@@ -30,6 +30,11 @@ entity SPI_Slave is
     SPI_MODE : integer := 0
   );
   port (
+    -- Debugging
+    o_debug_a : out std_logic;
+    o_debug_b : out std_logic;
+    o_debug_c : out std_logic;
+
     -- Control/Data Signals, so that other VHDL modules can use it
     i_Rst_L    : in  std_logic;    -- FPGA Reset, active low
     i_Clk      : in  std_logic;    -- FPGA Clock
@@ -97,6 +102,7 @@ begin
       r_RX_Bit_Count <= (others => '0');
       r_RX_Done <= '0';
     elsif rising_edge(w_SPI_Clk) then
+      -- Receive in LSB, shift up to MSB
       r_RX_Bit_Count <= r_RX_Bit_Count + 1; -- Rolls back to '000' eventually
       r_Temp_RX_Byte <= r_Temp_RX_Byte(6 downto 0) & i_SPI_MOSI;
 
@@ -168,10 +174,10 @@ begin
   begin
     if i_SPI_CS_n = '1' then
       r_TX_Bit_Count <= "111";  -- Send MSb first
-      r_SPI_MISO_Bit <= r_TX_Byte(7);  -- Reset to MSb
+      -- r_SPI_MISO_Bit <= r_TX_Byte(7);  -- Reset to MSb
     elsif rising_edge(w_SPI_Clk) then
       r_TX_Bit_Count <= r_TX_Bit_Count - 1; -- Rolls back to '111' eventually
-      r_SPI_MISO_Bit <= r_TX_Byte(to_integer(r_TX_Bit_Count));
+      r_SPI_MISO_Bit <= r_TX_Byte(to_integer(unsigned(r_TX_Bit_Count)));
     end if;
   end process;
 
@@ -192,10 +198,24 @@ begin
     end if;
   end process;
 
+  -- TODO LORIS: commented out
   -- Preload MISO with top bit of send data when preload selector is high.
-  w_SPI_MISO_Mux <= r_TX_Byte(7) when r_Preload_MISO = '1' else r_SPI_MISO_Bit;
+  -- w_SPI_MISO_Mux <= r_TX_Byte(7) when r_Preload_MISO = '1' else r_SPI_MISO_Bit;
 
+  -- TODO LORIS: commented out the tri-state logic
   -- Tri-state MISO when CS is high
-  o_SPI_MISO <= 'Z' when i_SPI_CS_n = '1' else w_SPI_MISO_Mux;
+  -- o_SPI_MISO <= r_SPI_MISO_Bit;
+
+  o_SPI_MISO <= r_TX_Byte(0);
+
+  -- Debugging summary:
+  -- * r_RX_Byte is correctly received
+  -- * r_RX_Bit_Count is incremented correctly
+  -- * r_TX_Bit_Count is incremented correctly
+  -- * works outputting the last bit of r_TX_Byte: o_SPI_MISO <= r_TX_Byte(0);
+
+  o_debug_a <= r_RX_Byte(2);
+  o_debug_b <= r_RX_Byte(1);
+  o_debug_c <= r_RX_Byte(0);
 
 end Behavioral;
