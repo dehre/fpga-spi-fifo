@@ -70,6 +70,9 @@ architecture Behavioral of SPI_Slave is
   -- Look at the paper you wrote, r3 isn't needed anymore.
   signal r_RX_Done, r2_RX_Done, r3_RX_Done : std_logic := '0';
 
+  -- TRANSMIT SIGNALS
+  signal r_TX_Byte : std_logic_vector(7 downto 0);
+
 begin
 
   -- CPOL: Clock Polarity
@@ -147,5 +150,15 @@ begin
   --
   -- TRANSMITTING BLOCKS
   --
+
+  -- Register TX_Byte when TX_DV is set
+  process(i_Clk)
+  begin
+    if rising_edge(i_Clk) then
+      if i_TX_DV = '1' then
+        r_TX_Byte <= i_TX_Byte;
+      end if;
+    end if;
+  end process;
 
 end Behavioral;
