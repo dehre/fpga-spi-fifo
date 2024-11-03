@@ -26,9 +26,6 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity SPISlave is
-  generic (
-    SPI_MODE : integer := 0
-  );
   port (
     -- Debugging
     o_debug_a : out std_logic;
@@ -53,14 +50,7 @@ end entity;
 
 architecture RTL of SPISlave is
 
-  -- SPI Interface signals - they aren't needed if using a single SPI mode
-  -- TODO LORIS: add comment: reading on rising edge, writing on falling edge
-  signal w_CPOL : std_logic;     -- Clock polarity
-  signal w_CPHA : std_logic;     -- Clock phase
-  signal w_SPI_Clk : std_logic;  -- Inverted/non-inverted depending on settings
-  signal w_SPI_MISO_Mux : std_logic;
-
-  -- Internal registers and signals
+  -- RECEIVE SIGNALS
   signal r_RX_Bit_Count : unsigned(2 downto 0) := (others => '0');
   signal r_Temp_RX_Byte : std_logic_vector(7 downto 0) := (others => '0');
   signal r_RX_Byte : std_logic_vector(7 downto 0) := (others => '0');
@@ -75,32 +65,17 @@ architecture RTL of SPISlave is
 
 begin
 
-  -- CPOL: Clock Polarity
-  -- CPOL=0 means clock idles at 0, leading edge is rising edge.
-  -- CPOL=1 means clock idles at 1, leading edge is falling edge.
-  w_CPOL <= '1' when SPI_MODE = 2 or SPI_MODE = 3 else '0';
-
-  -- CPHA: Clock Phase
-  -- CPHA=0 means the "out" side changes the data on trailing edge of clock
-  --              the "in" side captures data on leading edge of clock
-  -- CPHA=1 means the "out" side changes the data on leading edge of clock
-  --              the "in" side captures data on the trailing edge of clock
-  w_CPHA <= '1' when SPI_MODE = 1 or SPI_MODE = 3 else '0';
-
-  -- SPI Clock depending on CPHA
-  w_SPI_Clk <= not i_SPI_Clk when w_CPHA = '1' else i_SPI_Clk;
-
   --
   -- RECEIVING BLOCKS
   --
 
   -- Get SPI Byte in SPI Clock Domain
-  process (w_SPI_Clk, i_SPI_CS_n)
+  process (i_SPI_Clk, i_SPI_CS_n)
   begin
     if i_SPI_CS_n = '1' then
       r_RX_Bit_Count <= (others => '0');
       r_RX_Done <= '0';
-    elsif rising_edge(w_SPI_Clk) then
+    elsif rising_edge(i_SPI_Clk) then
       r_RX_Bit_Count <= r_RX_Bit_Count + 1; -- Rolls back to '000' eventually
       r_Temp_RX_Byte <= r_Temp_RX_Byte(6 downto 0) & i_SPI_MOSI;
 
