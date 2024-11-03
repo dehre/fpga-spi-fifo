@@ -25,7 +25,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity SPI_Slave is
+entity SPISlave is
   generic (
     SPI_MODE : integer := 0
   );
@@ -49,9 +49,9 @@ entity SPI_Slave is
     i_SPI_MOSI : in  std_logic;
     i_SPI_CS_n : in  std_logic   -- active low
   );
-end SPI_Slave;
+end entity;
 
-architecture Behavioral of SPI_Slave is
+architecture RTL of SPISlave is
 
   -- SPI Interface signals - they aren't needed if using a single SPI mode
   -- TODO LORIS: add comment: reading on rising edge, writing on falling edge
@@ -177,4 +177,4 @@ begin
 
   -- TODO LORIS: tristate MISO when not communicating
 
-end Behavioral;
+end architecture;

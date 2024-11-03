@@ -39,7 +39,7 @@ architecture RTL of SpiFollower is
 
 begin
 
-
+  -- Debugging
   process (i_clk, r_clk_half)
   begin
     if rising_edge(i_clk) then
@@ -47,8 +47,8 @@ begin
     end if;
   end process;
 
-  -- Instantiate the SPI_Slave component
-  SpiSlaveInstance: entity work.SPI_Slave
+  -- Instantiate the SPISlave component
+  SpiSlaveInstance: entity work.SPISlave
     generic map (SPI_MODE => 0)
     port map (
       o_debug_a => o_debug_a,
