@@ -44,22 +44,20 @@ begin
 
   -- Receive RX Byte in SPI-Clock Domain
   process(i_spi_cs_n, i_spi_clk)
-    variable v_rx_bit_count : natural range 0 to 8;
+    variable v_rx_bit_count : natural range 0 to 7;
   begin
     if i_spi_cs_n = '1' then
       v_rx_bit_count := 0;
       r_rx_byte <= (others => '0');
-    elsif rising_edge(i_spi_clk) then
-      r_rx_byte <= r_rx_byte(6 downto 0) & i_spi_mosi;
-      v_rx_bit_count := v_rx_bit_count + 1;
-    end if;
-
-    if v_rx_bit_count = 8 then
-      r1_rx_done <= '1';
-      o_debug_a <= '1';
-    else
       r1_rx_done <= '0';
       o_debug_a <= '0';
+    elsif rising_edge(i_spi_clk) then
+      r_rx_byte <= r_rx_byte(6 downto 0) & i_spi_mosi; -- bit shifting
+      if v_rx_bit_count = 7 then
+        r1_rx_done <= '1';
+        o_debug_a <= '1';
+      end if;
+      v_rx_bit_count := (v_rx_bit_count + 1) mod 8;
     end if;
   end process;
 
@@ -101,13 +99,11 @@ begin
   begin
     if i_spi_cs_n = '1' then
       v_tx_bit_count := 7;
+      o_spi_miso <= 'Z'; -- tristate when not active
     elsif falling_edge(i_spi_clk) then
-      v_tx_bit_count := v_tx_bit_count - 1;
+      o_spi_miso <= r_tx_byte(v_tx_bit_count);
+      v_tx_bit_count := (v_tx_bit_count - 1) mod 8;
     end if;
-  
-    o_spi_miso <= r_tx_byte(v_tx_bit_count);
   end process;
-
-  -- TODO LORIS: tristate MISO when not communicating
 
 end architecture;
