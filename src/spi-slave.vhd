@@ -67,20 +67,21 @@ begin
 
   -- Receive RX Byte in SPI-Clock Domain
   process(i_SPI_CS_n, i_SPI_Clk)
-    variable v_RX_Bit_Count : integer := -1;
+    variable v_RX_Bit_Count : integer range -1 to 7 := (-1);
   begin
     if i_SPI_CS_n = '1' then
-      v_RX_Bit_Count := -1;
+      v_RX_Bit_Count := (-1);
     elsif rising_edge(i_SPI_Clk) then
       v_RX_Bit_Count := v_RX_Bit_Count + 1;
     end if;
 
     if v_RX_Bit_Count = 7 then
       r1_RX_Done <= '1';
-    elsif v_RX_Bit_Count = 2 then -- TODO LORIS: needed? otherwise just reset
+    else
       r1_RX_Done <= '0';
     end if;
 
+    -- TODO LORIS: it might set bit-0 at `i_SPI_CS_n = '1'` too
     r_RX_Byte(v_RX_Bit_Count) <= i_SPI_MOSI;
   end process;
 
@@ -90,7 +91,7 @@ begin
     if rising_edge(i_Clk) then
       r2_RX_Done <= r1_RX_Done;
       r3_RX_Done <= r2_RX_Done;
-      if r2_RX_Done = '1' and r3_RX_Done = '0' then
+      if r3_RX_Done = '0' and r2_RX_Done = '1' then
         o_RX_Byte <= r_RX_Byte;
         o_RX_DV <= '1';
       else
@@ -116,7 +117,7 @@ begin
 
   -- Send over TX_Byte on falling_edge of SPI Clock
   process(i_SPI_CS_n, i_SPI_Clk)
-    variable v_TX_Bit_Count : integer := 7;
+    variable v_TX_Bit_Count : integer range 0 to 7 := 7;
   begin
     if i_SPI_CS_n = '1' then
       v_TX_Bit_Count := 7;
