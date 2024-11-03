@@ -175,4 +175,6 @@ begin
     o_SPI_MISO <= r_TX_Byte(v_TX_Bit_Count);
   end process;
 
+  -- TODO LORIS: tristate MISO when not communicating
+
 end Behavioral;
