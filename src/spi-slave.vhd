@@ -152,13 +152,27 @@ begin
   --
 
   -- Register TX_Byte when TX_DV is set
+  -- TODO LORIS: eventually handle reset signal
   process(i_Clk)
   begin
-    if rising_edge(i_Clk) then
+    if falling_edge(i_Clk) then
       if i_TX_DV = '1' then
         r_TX_Byte <= i_TX_Byte;
       end if;
     end if;
+  end process;
+
+  -- Send over TX_Byte on falling_edge of SPI Clock
+  process(i_SPI_CS_n, i_SPI_Clk)
+    variable v_TX_Bit_Count : integer := 7;
+  begin
+    if i_SPI_CS_n = '1' then
+      v_TX_Bit_Count := 7;
+    elsif falling_edge(i_SPI_Clk) then
+      v_TX_Bit_Count := v_TX_Bit_Count - 1;
+    end if;
+  
+    o_SPI_MISO <= r_TX_Byte(v_TX_Bit_Count);
   end process;
 
 end Behavioral;

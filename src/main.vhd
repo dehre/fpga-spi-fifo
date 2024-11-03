@@ -96,7 +96,8 @@ begin
     begin
       if rising_edge(i_clk) then
         if w_RX_DV = '1' then
-          w_TX_Byte <= w_RX_Byte;
+          -- w_TX_Byte <= w_RX_Byte;
+          w_TX_Byte <= "10101010";
           w_TX_DV   <= '1';
         else
           w_TX_DV   <= '0';
