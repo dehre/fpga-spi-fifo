@@ -52,7 +52,9 @@ architecture RTL of SPISlave is
 
   -- RECEIVE SIGNALS
   signal r_RX_Byte : std_logic_vector(7 downto 0);
-  signal r_RX_Done : std_logic;
+  signal r1_RX_Done : std_logic; -- spi-clock domain
+  signal r2_RX_Done : std_logic; -- fpga-clock domain
+  signal r3_RX_Done : std_logic; -- fpga-clock domain
 
   -- TRANSMIT SIGNALS
   signal r_TX_Byte : std_logic_vector(7 downto 0);
@@ -63,10 +65,10 @@ begin
   -- RECEIVING BLOCKS
   --
 
+  -- Receive RX Byte in SPI-Clock Domain
   process(i_SPI_CS_n, i_SPI_Clk)
     variable v_RX_Bit_Count : integer := -1;
   begin
-
     if i_SPI_CS_n = '1' then
       v_RX_Bit_Count := -1;
     elsif rising_edge(i_SPI_Clk) then
@@ -74,13 +76,27 @@ begin
     end if;
 
     if v_RX_Bit_Count = 7 then
-      r_RX_Done <= '1';
+      r1_RX_Done <= '1';
     elsif v_RX_Bit_Count = 2 then -- TODO LORIS: needed? otherwise just reset
-      r_RX_Done <= '0';
+      r1_RX_Done <= '0';
     end if;
 
     r_RX_Byte(v_RX_Bit_Count) <= i_SPI_MOSI;
+  end process;
 
+  -- Signal RX Done in FPGA-Clock Domain
+  process(i_Clk)
+  begin
+    if rising_edge(i_Clk) then
+      r2_RX_Done <= r1_RX_Done;
+      r3_RX_Done <= r2_RX_Done;
+      if r2_RX_Done = '1' and r3_RX_Done = '0' then
+        o_RX_Byte <= r_RX_Byte;
+        o_RX_DV <= '1';
+      else
+        o_RX_DV <= '0';
+      end if;
+    end if;
   end process;
 
   --
