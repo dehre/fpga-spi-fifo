@@ -49,7 +49,6 @@ begin
 
   -- Instantiate the SPISlave component
   SpiSlaveInstance: entity work.SPISlave
-    generic map (SPI_MODE => 0)
     port map (
       o_debug_a => o_debug_a,
       o_debug_b => o_debug_b,
