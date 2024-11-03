@@ -67,22 +67,23 @@ begin
 
   -- Receive RX Byte in SPI-Clock Domain
   process(i_SPI_CS_n, i_SPI_Clk)
-    variable v_RX_Bit_Count : integer range -1 to 7 := (-1);
+    variable v_RX_Bit_Count : natural range 0 to 8;
   begin
     if i_SPI_CS_n = '1' then
-      v_RX_Bit_Count := (-1);
+      v_RX_Bit_Count := 0;
+      r_RX_Byte <= (others => '0');
     elsif rising_edge(i_SPI_Clk) then
+      r_RX_Byte <= r_RX_Byte(6 downto 0) & i_SPI_MOSI;
       v_RX_Bit_Count := v_RX_Bit_Count + 1;
     end if;
 
-    if v_RX_Bit_Count = 7 then
+    if v_RX_Bit_Count = 8 then
       r1_RX_Done <= '1';
+      o_debug_a <= '1';
     else
       r1_RX_Done <= '0';
+      o_debug_a <= '0';
     end if;
-
-    -- TODO LORIS: it might set bit-0 at `i_SPI_CS_n = '1'` too
-    r_RX_Byte(v_RX_Bit_Count) <= i_SPI_MOSI;
   end process;
 
   -- Signal RX Done in FPGA-Clock Domain
@@ -94,8 +95,10 @@ begin
       if r3_RX_Done = '0' and r2_RX_Done = '1' then
         o_RX_Byte <= r_RX_Byte;
         o_RX_DV <= '1';
+        o_debug_b <= '1';
       else
         o_RX_DV <= '0';
+        o_debug_b <= '0';
       end if;
     end if;
   end process;
@@ -117,7 +120,7 @@ begin
 
   -- Send over TX_Byte on falling_edge of SPI Clock
   process(i_SPI_CS_n, i_SPI_Clk)
-    variable v_TX_Bit_Count : integer range 0 to 7 := 7;
+    variable v_TX_Bit_Count : natural range 0 to 7;
   begin
     if i_SPI_CS_n = '1' then
       v_TX_Bit_Count := 7;
