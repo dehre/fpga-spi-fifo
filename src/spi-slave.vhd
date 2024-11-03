@@ -30,6 +30,11 @@ entity SPI_Slave is
     SPI_MODE : integer := 0
   );
   port (
+    -- Debugging
+    o_debug_a : out std_logic;
+    o_debug_b : out std_logic;
+    o_debug_c : out std_logic;
+
     -- Control/Data Signals, so that other VHDL modules can use it
     i_Rst_L    : in  std_logic;    -- FPGA Reset, active low
     i_Clk      : in  std_logic;    -- FPGA Clock
@@ -167,11 +172,12 @@ begin
   process (w_SPI_Clk, i_SPI_CS_n)
   begin
     if i_SPI_CS_n = '1' then
+      -- TODO LORIS: maybe just natural numbers
       r_TX_Bit_Count <= "111";  -- Send MSb first
       r_SPI_MISO_Bit <= r_TX_Byte(7);  -- Reset to MSb
     elsif rising_edge(w_SPI_Clk) then
       r_TX_Bit_Count <= r_TX_Bit_Count - 1; -- Rolls back to '111' eventually
-      r_SPI_MISO_Bit <= r_TX_Byte(to_integer(r_TX_Bit_Count));
+      r_SPI_MISO_Bit <= r_TX_Byte(to_integer(unsigned(r_TX_Bit_Count)));
     end if;
   end process;
 
@@ -197,5 +203,9 @@ begin
 
   -- Tri-state MISO when CS is high
   o_SPI_MISO <= 'Z' when i_SPI_CS_n = '1' else w_SPI_MISO_Mux;
+
+  o_debug_a <= r_TX_Bit_Count(2);
+  o_debug_b <= r_TX_Bit_Count(1);
+  o_debug_c <= r_TX_Bit_Count(0);
 
 end Behavioral;
