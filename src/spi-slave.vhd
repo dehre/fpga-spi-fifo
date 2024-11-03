@@ -1,26 +1,3 @@
--------------------------------------------------------------------------------
--- Description: SPI (Serial Peripheral Interface) Slave
---              Creates slave based on input configuration.
---              Receives a byte one bit at a time on MOSI
---              Will also push out byte data one bit at a time on MISO.  
---              Any data on input byte will be shipped out on MISO.
---              Supports multiple bytes per transaction when CS_n is kept 
---              low during the transaction.
---
--- Note:        i_Clk must be at least 4x faster than i_SPI_Clk
---              MISO is tri-stated when not communicating.  Allows for multiple
---              SPI Slaves on the same interface.
---
--- Parameters:  SPI_MODE, can be 0, 1, 2, or 3.  See above.
---              Can be configured in one of 4 modes:
---              Mode | Clock Polarity (CPOL/CKP) | Clock Phase (CPHA)
---               0   |             0             |        0
---               1   |             0             |        1
---               2   |             1             |        0
---               3   |             1             |        1
---              More info: https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus#Mode_numbers
--------------------------------------------------------------------------------
-
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -33,31 +10,31 @@ entity SPISlave is
     o_debug_c : out std_logic;
 
     -- Control/Data Signals, so that other VHDL modules can use it
-    i_Rst_L    : in  std_logic;    -- FPGA Reset, active low
-    i_Clk      : in  std_logic;    -- FPGA Clock
-    o_RX_DV    : out std_logic;    -- Data Valid pulse (1 clock cycle)
-    o_RX_Byte  : out std_logic_vector(7 downto 0);  -- Byte received on MOSI
-    i_TX_DV    : in  std_logic;    -- Data Valid pulse to register i_TX_Byte
-    i_TX_Byte  : in  std_logic_vector(7 downto 0);  -- Byte to serialize to MISO
+    i_rst_n    : in  std_logic;    -- FPGA Reset, active low
+    i_clk      : in  std_logic;    -- FPGA Clock
+    o_rx_dv    : out std_logic;    -- Data Valid pulse (1 clock cycle)
+    o_rx_byte  : out std_logic_vector(7 downto 0);  -- Byte received on MOSI
+    i_tx_dv    : in  std_logic;    -- Data Valid pulse to register i_TX_Byte
+    i_tx_byte  : in  std_logic_vector(7 downto 0);  -- Byte to serialize to MISO
     
     -- SPI Interface
-    i_SPI_Clk  : in  std_logic;
-    o_SPI_MISO : out std_logic;
-    i_SPI_MOSI : in  std_logic;
-    i_SPI_CS_n : in  std_logic   -- active low
+    i_spi_clk  : in  std_logic;
+    o_spi_miso : out std_logic;
+    i_spi_mosi : in  std_logic;
+    i_spi_cs_n : in  std_logic   -- active low
   );
 end entity;
 
 architecture RTL of SPISlave is
 
   -- RECEIVE SIGNALS
-  signal r_RX_Byte : std_logic_vector(7 downto 0);
-  signal r1_RX_Done : std_logic; -- spi-clock domain
-  signal r2_RX_Done : std_logic; -- fpga-clock domain
-  signal r3_RX_Done : std_logic; -- fpga-clock domain
+  signal r_rx_byte : std_logic_vector(7 downto 0);
+  signal r1_rx_done : std_logic; -- spi-clock domain
+  signal r2_rx_done : std_logic; -- fpga-clock domain
+  signal r3_rx_done : std_logic; -- fpga-clock domain
 
   -- TRANSMIT SIGNALS
-  signal r_TX_Byte : std_logic_vector(7 downto 0);
+  signal r_tx_byte : std_logic_vector(7 downto 0);
 
 begin
 
@@ -66,38 +43,38 @@ begin
   --
 
   -- Receive RX Byte in SPI-Clock Domain
-  process(i_SPI_CS_n, i_SPI_Clk)
-    variable v_RX_Bit_Count : natural range 0 to 8;
+  process(i_spi_cs_n, i_spi_clk)
+    variable v_rx_bit_count : natural range 0 to 8;
   begin
-    if i_SPI_CS_n = '1' then
-      v_RX_Bit_Count := 0;
-      r_RX_Byte <= (others => '0');
-    elsif rising_edge(i_SPI_Clk) then
-      r_RX_Byte <= r_RX_Byte(6 downto 0) & i_SPI_MOSI;
-      v_RX_Bit_Count := v_RX_Bit_Count + 1;
+    if i_spi_cs_n = '1' then
+      v_rx_bit_count := 0;
+      r_rx_byte <= (others => '0');
+    elsif rising_edge(i_spi_clk) then
+      r_rx_byte <= r_rx_byte(6 downto 0) & i_spi_mosi;
+      v_rx_bit_count := v_rx_bit_count + 1;
     end if;
 
-    if v_RX_Bit_Count = 8 then
-      r1_RX_Done <= '1';
+    if v_rx_bit_count = 8 then
+      r1_rx_done <= '1';
       o_debug_a <= '1';
     else
-      r1_RX_Done <= '0';
+      r1_rx_done <= '0';
       o_debug_a <= '0';
     end if;
   end process;
 
   -- Signal RX Done in FPGA-Clock Domain
-  process(i_Clk)
+  process(i_clk)
   begin
-    if rising_edge(i_Clk) then
-      r2_RX_Done <= r1_RX_Done;
-      r3_RX_Done <= r2_RX_Done;
-      if r3_RX_Done = '0' and r2_RX_Done = '1' then
-        o_RX_Byte <= r_RX_Byte;
-        o_RX_DV <= '1';
+    if rising_edge(i_clk) then
+      r2_rx_done <= r1_rx_done;
+      r3_rx_done <= r2_rx_done;
+      if r3_rx_done = '0' and r2_rx_done = '1' then
+        o_rx_byte <= r_rx_byte;
+        o_rx_dv <= '1';
         o_debug_b <= '1';
       else
-        o_RX_DV <= '0';
+        o_rx_dv <= '0';
         o_debug_b <= '0';
       end if;
     end if;
@@ -109,26 +86,26 @@ begin
 
   -- Register TX_Byte when TX_DV is set
   -- TODO LORIS: eventually handle reset signal
-  process(i_Clk)
+  process(i_clk)
   begin
-    if falling_edge(i_Clk) then
-      if i_TX_DV = '1' then
-        r_TX_Byte <= i_TX_Byte;
+    if falling_edge(i_clk) then
+      if i_tx_dv = '1' then
+        r_tx_byte <= i_tx_byte;
       end if;
     end if;
   end process;
 
   -- Send over TX_Byte on falling_edge of SPI Clock
-  process(i_SPI_CS_n, i_SPI_Clk)
-    variable v_TX_Bit_Count : natural range 0 to 7;
+  process(i_spi_cs_n, i_spi_clk)
+    variable v_tx_bit_count : natural range 0 to 7;
   begin
-    if i_SPI_CS_n = '1' then
-      v_TX_Bit_Count := 7;
-    elsif falling_edge(i_SPI_Clk) then
-      v_TX_Bit_Count := v_TX_Bit_Count - 1;
+    if i_spi_cs_n = '1' then
+      v_tx_bit_count := 7;
+    elsif falling_edge(i_spi_clk) then
+      v_tx_bit_count := v_tx_bit_count - 1;
     end if;
   
-    o_SPI_MISO <= r_TX_Byte(v_TX_Bit_Count);
+    o_spi_miso <= r_tx_byte(v_tx_bit_count);
   end process;
 
   -- TODO LORIS: tristate MISO when not communicating
