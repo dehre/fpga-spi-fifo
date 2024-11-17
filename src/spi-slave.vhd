@@ -47,6 +47,7 @@ architecture RTL of SPISlave is
   signal w_slave_ready      : std_logic;
   signal r_shreg_busy       : std_logic;
   signal w_rx_data_vld      : std_logic;
+  signal r_spi_miso         : std_logic;
 
 begin
 
@@ -198,12 +199,15 @@ begin
   begin
     if (rising_edge(i_clk)) then
       if (w_load_data_en = '1') then
-        o_spi_miso <= i_din(WORD_SIZE-1);
+        r_spi_miso <= i_din(WORD_SIZE-1);
       elsif (w_spi_clk_fedge_en = '1' and r_spi_cs_n = '0') then
-        o_spi_miso <= r_data_shreg(WORD_SIZE-1);
+        r_spi_miso <= r_data_shreg(WORD_SIZE-1);
       end if;
     end if;
   end process;
+
+  -- Tri-state MISO when r_spi_cs_n is high
+  o_spi_miso <= 'Z' when r_spi_cs_n = '1' else r_spi_miso;
 
   -- -------------------------------------------------------------------------
   --  ASSIGNING OUTPUT SIGNALS
