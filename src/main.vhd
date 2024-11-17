@@ -1,67 +1,73 @@
 -- PROJECT TOP.
--- Counts the number of rising edges on pin 1 of the PMOD connector,
--- displaying the count (0-99) on two 7-segment displays.
+-- This module receives data (bytes) from an SPI master and echoes it back
+-- on the subsequent SPI transaction, functioning as an SPI loopback device.
+-- 
+-- It's recommended to reset the FPGA before starting the communication to
+-- properly initialize its internal registers and ensure synchronization.
+-- To reset the FPGA, assert both `i_spi_cs_n` and `i_rst` , then pulse `i_spi_clk`.
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity DisplayCounter is
+entity SPIRepeater is
   -- Inputs/Outputs for the top module.
   port (
-    io_pmod_1    : in  std_logic;  -- Clock signal from PMOD pin 1
-    o_display0_a : out std_logic;  -- Display 0, segment A
-    o_display0_b : out std_logic;  -- Display 0, segment B
-    o_display0_c : out std_logic;  -- Display 0, segment C
-    o_display0_d : out std_logic;  -- Display 0, segment D
-    o_display0_e : out std_logic;  -- Display 0, segment E
-    o_display0_f : out std_logic;  -- Display 0, segment F
-    o_display0_g : out std_logic;  -- Display 0, segment G
-    o_display1_a : out std_logic;  -- Display 1, segment A
-    o_display1_b : out std_logic;  -- Display 1, segment B
-    o_display1_c : out std_logic;  -- Display 1, segment C
-    o_display1_d : out std_logic;  -- Display 1, segment D
-    o_display1_e : out std_logic;  -- Display 1, segment E
-    o_display1_f : out std_logic;  -- Display 1, segment F
-    o_display1_g : out std_logic); -- Display 1, segment G
+    -- Control/Data Signals
+    i_rst      : in  std_logic;     -- FPGA Reset
+    i_clk      : in  std_logic;     -- FPGA Clock
+
+    -- SPI Interface
+    i_spi_clk  : in  std_logic;     -- SPI Clock
+    o_spi_miso : out std_logic;     -- Master In, Slave Out
+    i_spi_mosi : in  std_logic;     -- Master Out, Slave In
+    i_spi_cs_n : in  std_logic);    -- Chip Select, active low
 end entity;
 
-architecture RTL of DisplayCounter is
+architecture RTL of SPIRepeater is
 
-  -- Wires connecting the two modules RisingEdgeDecimalCounter and DisplayDriver.
-  signal w_ones_bcd : std_logic_vector(3 downto 0);
-  signal w_tens_bcd : std_logic_vector(3 downto 0);
+  constant WORD_SIZE : integer := 8; -- SPI word size, 8 bits
+  signal r_din       : std_logic_vector(WORD_SIZE-1 downto 0); -- Data to send to master
+  signal r_din_vld   : std_logic;    -- Data valid signal for SPI slave
+  signal w_din_rdy   : std_logic;    -- Ready signal from SPI slave
+  signal w_dout      : std_logic_vector(WORD_SIZE-1 downto 0); -- Data received from master
+  signal w_dout_vld  : std_logic;    -- Data valid signal from SPISlave
 
 begin
-  -- Module counting the number of rising edges on pmod_1.
-  -- Outputs a 2-digits BCD value (0 to 99).
-  RisingEdgeDecimalCounterInstance: entity work.RisingEdgeDecimalCounter
-    port map (
-      i_clk      => io_pmod_1,
-      o_ones_bcd => w_ones_bcd,
-      o_tens_bcd => w_tens_bcd);
 
-  -- Modules driving the two 7-segments displays.
-  Display0DriverInstance: entity work.DisplayDriver
+  -- Module handling the SPI interface.
+  SPISlaveInstance : entity work.SPISlave
+    generic map (WORD_SIZE => WORD_SIZE)
     port map (
-      i_bcd       => w_ones_bcd,
-      o_segment_a => o_display0_a,
-      o_segment_b => o_display0_b,
-      o_segment_c => o_display0_c,
-      o_segment_d => o_display0_d,
-      o_segment_e => o_display0_e,
-      o_segment_f => o_display0_f,
-      o_segment_g => o_display0_g);
+      i_clk      => i_clk,
+      i_rst      => i_rst,
+      i_spi_clk  => i_spi_clk,
+      i_spi_cs_n => i_spi_cs_n,
+      i_spi_mosi => i_spi_mosi,
+      o_spi_miso => o_spi_miso,
+      i_din      => r_din,
+      i_din_vld  => r_din_vld,
+      o_din_rdy  => w_din_rdy,
+      o_dout     => w_dout,
+      o_dout_vld => w_dout_vld);
 
-  Display1DriverInstance: entity work.DisplayDriver
-    port map (
-      i_bcd       => w_tens_bcd,
-      o_segment_a => o_display1_a,
-      o_segment_b => o_display1_b,
-      o_segment_c => o_display1_c,
-      o_segment_d => o_display1_d,
-      o_segment_e => o_display1_e,
-      o_segment_f => o_display1_f,
-      o_segment_g => o_display1_g);
+    process(i_clk)
+    begin
+      if rising_edge(i_clk) then
+        if i_rst = '1' then
+          r_din     <= (others => '0');
+          r_din_vld <= '0';
+        else
+          -- Load received data into the transmit buffer for the next transaction.
+          if w_dout_vld = '1' then
+            r_din <= w_dout;
+            r_din_vld <= '1';
+          elsif w_din_rdy = '1' then
+            -- Clear r_din_vld once SPISlave is ready to accept new data.
+            r_din_vld <= '0';
+          end if;
+        end if;
+      end if;
+    end process;
 
 end architecture;
