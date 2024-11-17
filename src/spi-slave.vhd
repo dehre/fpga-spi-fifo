@@ -9,8 +9,8 @@ use ieee.math_real.all;
 entity SPISlave is
   generic (WORD_SIZE : natural := 8); -- size of transfer word in bits, must be power of two
   port (
-    i_clk      : in  std_logic;  -- system clock
     i_rst      : in  std_logic;  -- high active synchronous reset
+    i_clk      : in  std_logic;  -- system clock
 
     -- SPI Slave Interface
     i_spi_clk  : in  std_logic;  -- SPI clock

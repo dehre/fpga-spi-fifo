@@ -1,8 +1,10 @@
+-- To reset the FPGA, assert both `i_spi_cs_n` and `i_rst`, then pulse `i_spi_clk`.
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity SPIFollower is
+entity SPIRepeater is
   port (
     -- Debugging Outputs
     o_debug_a  : out  std_logic; 
@@ -20,7 +22,7 @@ entity SPIFollower is
     i_spi_cs_n : in  std_logic);    -- Chip Select, active low
 end entity;
 
-architecture RTL of SPIFollower is
+architecture RTL of SPIRepeater is
 
   constant WORD_SIZE : integer := 8; -- SPI word size, 8 bits
   signal r_din       : std_logic_vector(WORD_SIZE-1 downto 0); -- Data to send to master
