@@ -1,6 +1,8 @@
 # Go Board Pin Constraints File
-# Family & Device:    iCE40HX1K
-# Package:            VQ100
+#
+# iCEcube PCF Version: 2020.12.27943
+# Family & Device:     iCE40HX1K
+# Package:             VQ100
 
 # Main FPGA Clock
 set_io i_clk 15
@@ -45,4 +47,4 @@ set_io i_spi_cs_n 62 # io_pmod_4
 set_io o_debug_a 78  # io_pmod_7
 set_io o_debug_b 79  # io_pmod_8
 set_io o_debug_c 80  # io_pmod_9
-set_io i_rst_n 81    # io_pmod_10
+set_io i_rst 81      # io_pmod_10
