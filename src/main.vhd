@@ -10,11 +10,11 @@ entity SPIFollower is
     o_debug_c  : out  std_logic;
 
     -- Control/Data Signals
-    i_rst      : in  std_logic;    -- FPGA Reset
-    i_clk      : in  std_logic;    -- FPGA Clock
+    i_rst      : in  std_logic;     -- FPGA Reset
+    i_clk      : in  std_logic;     -- FPGA Clock
 
     -- SPI Interface
-    i_spi_clk  : in  std_logic;
+    i_spi_clk  : in  std_logic;     -- SPI Clock
     o_spi_miso : out std_logic;     -- Master In, Slave Out
     i_spi_mosi : in  std_logic;     -- Master Out, Slave In
     i_spi_cs_n : in  std_logic);    -- Chip Select, active low
@@ -54,7 +54,7 @@ begin
           r_din_vld <= '0';
         else
           -- When new data is received from master,
-          -- load it back into din to send it on the next transaction
+          -- load it back into r_din to send it on the next transaction
           if w_dout_vld = '1' then
             r_din <= w_dout;
             r_din_vld <= '1';
