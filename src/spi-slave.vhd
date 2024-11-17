@@ -1,109 +1,216 @@
+-- Adapted from:
+-- https://github.com/jakubcabal/spi-fpga/tree/d8240ff3f59fdeeadd87692333aeafb69b0b88a1
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use ieee.math_real.all;
 
 entity SPISlave is
+  generic (WORD_SIZE : natural := 8); -- size of transfer word in bits, must be power of two
   port (
-    -- Debugging
-    o_debug_a : out std_logic;
-    o_debug_b : out std_logic;
-    o_debug_c : out std_logic;
+    i_clk      : in  std_logic;  -- system clock
+    i_rst      : in  std_logic;  -- high active synchronous reset
 
-    -- Control/Data Signals, so that other VHDL modules can use it
-    i_rst_n    : in  std_logic;    -- FPGA Reset, active low
-    i_clk      : in  std_logic;    -- FPGA Clock
-    o_rx_dv    : out std_logic;    -- Data Valid pulse (1 clock cycle)
-    o_rx_byte  : out std_logic_vector(7 downto 0);  -- Byte received on MOSI
-    i_tx_dv    : in  std_logic;    -- Data Valid pulse to register i_TX_Byte
-    i_tx_byte  : in  std_logic_vector(7 downto 0);  -- Byte to serialize to MISO
-    
-    -- SPI Interface
-    i_spi_clk  : in  std_logic;
-    o_spi_miso : out std_logic;
-    i_spi_mosi : in  std_logic;
-    i_spi_cs_n : in  std_logic   -- active low
-  );
+    -- SPI Slave Interface
+    i_spi_clk  : in  std_logic;  -- SPI clock
+    i_spi_cs_n : in  std_logic;  -- SPI chip select, active in low
+    i_spi_mosi : in  std_logic;  -- SPI serial data from master to slave
+    o_spi_miso : out std_logic;  -- SPI serial data from slave to master
+
+    -- User Interface
+    i_din      : in  std_logic_vector(WORD_SIZE-1 downto 0); -- data for transmission to SPI master
+    i_din_vld  : in  std_logic;  -- when i_din_vld = 1, data for transmission are valid
+    o_din_rdy  : out std_logic;  -- when o_din_rdy = 1, SPI slave is ready to accept valid data for transmission
+    o_dout     : out std_logic_vector(WORD_SIZE-1 downto 0); -- received data from SPI master
+    o_dout_vld : out std_logic); -- when o_dout_vld = 1, received data are valid
 end entity;
 
 architecture RTL of SPISlave is
 
-  -- RECEIVE SIGNALS
-  signal r_rx_byte : std_logic_vector(7 downto 0);
-  signal r1_rx_done : std_logic; -- spi-clock domain
-  signal r2_rx_done : std_logic; -- fpga-clock domain
-  signal r3_rx_done : std_logic; -- fpga-clock domain
+  constant BIT_CNT_WIDTH : natural := natural(ceil(log2(real(WORD_SIZE))));
 
-  -- TRANSMIT SIGNALS
-  signal r_tx_byte : std_logic_vector(7 downto 0);
+  signal r_spi_clk_meta     : std_logic;
+  signal r_spi_cs_n_meta    : std_logic;
+  signal r_spi_mosi_meta    : std_logic;
+  signal r1_spi_clk         : std_logic;
+  signal r_spi_cs_n         : std_logic;
+  signal r_spi_mosi         : std_logic;
+  signal r2_spi_clk         : std_logic;
+  signal w_spi_clk_redge_en : std_logic;
+  signal w_spi_clk_fedge_en : std_logic;
+  signal r_bit_cnt          : unsigned(BIT_CNT_WIDTH-1 downto 0);
+  signal w_bit_cnt_max      : std_logic;
+  signal r_last_bit_en      : std_logic;
+  signal w_load_data_en     : std_logic;
+  signal r_data_shreg       : std_logic_vector(WORD_SIZE-1 downto 0);
+  signal w_slave_ready      : std_logic;
+  signal r_shreg_busy       : std_logic;
+  signal w_rx_data_vld      : std_logic;
 
 begin
 
-  --
-  -- RECEIVING BLOCKS
-  --
+  -- -------------------------------------------------------------------------
+  --  INPUT SYNCHRONIZATION REGISTERS
+  -- -------------------------------------------------------------------------
 
-  -- Receive RX Byte in SPI-Clock Domain
-  process(i_spi_cs_n, i_spi_clk)
-    variable v_rx_bit_count : natural range 0 to 7;
+  -- Synchronization registers to eliminate possible metastability.
+  process (i_clk)
   begin
-    if i_spi_cs_n = '1' then
-      v_rx_bit_count := 0;
-      r_rx_byte <= (others => '0');
-      r1_rx_done <= '0';
-      o_debug_a <= '0';
-    elsif rising_edge(i_spi_clk) then
-      r_rx_byte <= r_rx_byte(6 downto 0) & i_spi_mosi; -- bit shifting
-      if v_rx_bit_count = 7 then
-        r1_rx_done <= '1';
-        o_debug_a <= '1';
-      end if;
-      v_rx_bit_count := (v_rx_bit_count + 1) mod 8;
+    if (rising_edge(i_clk)) then
+      r_spi_clk_meta <= i_spi_clk;
+      r_spi_cs_n_meta <= i_spi_cs_n;
+      r_spi_mosi_meta <= i_spi_mosi;
+      r1_spi_clk  <= r_spi_clk_meta;
+      r_spi_cs_n  <= r_spi_cs_n_meta;
+      r_spi_mosi  <= r_spi_mosi_meta;
     end if;
   end process;
 
-  -- Signal RX Done in FPGA-Clock Domain
-  process(i_clk)
+  -- -------------------------------------------------------------------------
+  --  SPI CLOCK REGISTER
+  -- -------------------------------------------------------------------------
+
+  -- The SPI clock register is necessary for clock edge detection.
+  process (i_clk)
   begin
-    if rising_edge(i_clk) then
-      r2_rx_done <= r1_rx_done;
-      r3_rx_done <= r2_rx_done;
-      if r3_rx_done = '0' and r2_rx_done = '1' then
-        o_rx_byte <= r_rx_byte;
-        o_rx_dv <= '1';
-        o_debug_b <= '1';
+    if (rising_edge(i_clk)) then
+      if (i_rst = '1') then
+        r2_spi_clk <= '0';
       else
-        o_rx_dv <= '0';
-        o_debug_b <= '0';
+        r2_spi_clk <= r1_spi_clk;
       end if;
     end if;
   end process;
 
-  --
-  -- TRANSMITTING BLOCKS
-  --
+  -- -------------------------------------------------------------------------
+  --  SPI CLOCK EDGES FLAGS
+  -- -------------------------------------------------------------------------
 
-  -- Register TX_Byte when TX_DV is set
-  -- TODO LORIS: eventually handle reset signal
-  process(i_clk)
+  -- Falling edge is detect when r1_spi_clk=0 and r2_spi_clk=1.
+  w_spi_clk_fedge_en <= not r1_spi_clk and r2_spi_clk;
+  -- Rising edge is detect when r1_spi_clk=1 and r2_spi_clk=0.
+  w_spi_clk_redge_en <= r1_spi_clk and not r2_spi_clk;
+
+  -- -------------------------------------------------------------------------
+  --  RECEIVED BITS COUNTER
+  -- -------------------------------------------------------------------------
+
+  -- The counter counts received bits from the master. Counter is enabled when
+  -- falling edge of SPI clock is detected and not asserted r_spi_cs_n.
+  process (i_clk)
   begin
-    if falling_edge(i_clk) then
-      if i_tx_dv = '1' then
-        r_tx_byte <= i_tx_byte;
+    if (rising_edge(i_clk)) then
+      if (i_rst = '1') then
+        r_bit_cnt <= (others => '0');
+      elsif (w_spi_clk_fedge_en = '1' and r_spi_cs_n = '0') then
+        if (w_bit_cnt_max = '1') then
+          r_bit_cnt <= (others => '0');
+        else
+          r_bit_cnt <= r_bit_cnt + 1;
+        end if;
       end if;
     end if;
   end process;
 
-  -- Send over TX_Byte on falling_edge of SPI Clock
-  process(i_spi_cs_n, i_spi_clk)
-    variable v_tx_bit_count : natural range 0 to 7;
+  -- The flag of maximal value of the bit counter.
+  w_bit_cnt_max <= '1' when (r_bit_cnt = WORD_SIZE-1) else '0';
+
+  -- -------------------------------------------------------------------------
+  --  LAST BIT FLAG REGISTER
+  -- -------------------------------------------------------------------------
+
+  -- The flag of last bit of received byte is only registered the flag of
+  -- maximal value of the bit counter.
+  process (i_clk)
   begin
-    if i_spi_cs_n = '1' then
-      v_tx_bit_count := 7;
-      o_spi_miso <= 'Z'; -- tristate when not active
-    elsif falling_edge(i_spi_clk) then
-      o_spi_miso <= r_tx_byte(v_tx_bit_count);
-      v_tx_bit_count := (v_tx_bit_count - 1) mod 8;
+    if (rising_edge(i_clk)) then
+      if (i_rst = '1') then
+        r_last_bit_en <= '0';
+      else
+        r_last_bit_en <= w_bit_cnt_max;
+      end if;
     end if;
   end process;
+
+  -- -------------------------------------------------------------------------
+  --  RECEIVED DATA VALID FLAG
+  -- -------------------------------------------------------------------------
+
+  -- Received data from master are valid when falling edge of SPI clock is
+  -- detected and the last bit of received byte is detected.
+  w_rx_data_vld <= w_spi_clk_fedge_en and r_last_bit_en;
+
+  -- -------------------------------------------------------------------------
+  --  SHIFT REGISTER BUSY FLAG REGISTER
+  -- -------------------------------------------------------------------------
+
+  -- Data shift register is busy until it sends all input data to SPI master.
+  process (i_clk)
+  begin
+    if (rising_edge(i_clk)) then
+      if (i_rst = '1') then
+        r_shreg_busy <= '0';
+      else
+        if (i_din_vld = '1' and (r_spi_cs_n = '1' or w_rx_data_vld = '1')) then
+          r_shreg_busy <= '1';
+        elsif (w_rx_data_vld = '1') then
+          r_shreg_busy <= '0';
+        else
+          r_shreg_busy <= r_shreg_busy;
+        end if;
+      end if;
+    end if;
+  end process;
+
+  -- The SPI slave is ready for accept new input data when r_spi_cs_n is assert and
+  -- shift register not busy or when received data are valid.
+  w_slave_ready <= (r_spi_cs_n and not r_shreg_busy) or w_rx_data_vld;
+
+  -- The new input data is loaded into the shift register when the SPI slave
+  -- is ready and input data are valid.
+  w_load_data_en <= w_slave_ready and i_din_vld;
+
+  -- -------------------------------------------------------------------------
+  --  DATA SHIFT REGISTER
+  -- -------------------------------------------------------------------------
+
+  -- The shift register holds data for sending to master, capture and store
+  -- incoming data from master.
+  process (i_clk)
+  begin
+    if (rising_edge(i_clk)) then
+      if (w_load_data_en = '1') then
+        r_data_shreg <= i_din;
+      elsif (w_spi_clk_redge_en = '1' and r_spi_cs_n = '0') then
+        r_data_shreg <= r_data_shreg(WORD_SIZE-2 downto 0) & r_spi_mosi;
+      end if;
+    end if;
+  end process;
+
+  -- -------------------------------------------------------------------------
+  --  MISO REGISTER
+  -- -------------------------------------------------------------------------
+
+  -- The output MISO register ensures that the bits are transmit to the master
+  -- when is not assert r_spi_cs_n and falling edge of SPI clock is detected.
+  process (i_clk)
+  begin
+    if (rising_edge(i_clk)) then
+      if (w_load_data_en = '1') then
+        o_spi_miso <= i_din(WORD_SIZE-1);
+      elsif (w_spi_clk_fedge_en = '1' and r_spi_cs_n = '0') then
+        o_spi_miso <= r_data_shreg(WORD_SIZE-1);
+      end if;
+    end if;
+  end process;
+
+  -- -------------------------------------------------------------------------
+  --  ASSIGNING OUTPUT SIGNALS
+  -- -------------------------------------------------------------------------
+
+  o_din_rdy  <= w_slave_ready;
+  o_dout     <= r_data_shreg;
+  o_dout_vld <= w_rx_data_vld;
 
 end architecture;
