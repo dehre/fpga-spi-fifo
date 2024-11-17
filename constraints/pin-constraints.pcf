@@ -44,7 +44,7 @@ set_io i_spi_clk 65  # io_pmod_1
 set_io o_spi_miso 64 # io_pmod_2
 set_io i_spi_mosi 63 # io_pmod_3
 set_io i_spi_cs_n 62 # io_pmod_4
-set_io o_debug_a 78  # io_pmod_7
-set_io o_debug_b 79  # io_pmod_8
-set_io o_debug_c 80  # io_pmod_9
-set_io i_rst 81      # io_pmod_10
+set_io i_rst 78      # io_pmod_7
+set_io o_debug_a 79  # io_pmod_8
+set_io o_debug_b 80  # io_pmod_9
+set_io o_debug_c 81  # io_pmod_10
