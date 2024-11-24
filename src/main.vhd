@@ -161,7 +161,7 @@ begin
                 -- TODO LORIS: use real data
                 r_tx_data <= std_logic_vector(to_unsigned(74, 8));
                 r_tx_valid <= '1';
-              elsif w_dout_valid = '1' then
+              elsif w_dout_vld = '1' then
                 -- TODO LORIS: use real data
                 -- TODO LORIS: remove duplicate, or just send zeroes thereafter?
                 r_tx_data <= std_logic_vector(to_unsigned(74, 8));
