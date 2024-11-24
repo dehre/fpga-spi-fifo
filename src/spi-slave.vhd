@@ -1,5 +1,10 @@
 -- Adapted from:
 -- https://github.com/jakubcabal/spi-fpga/tree/d8240ff3f59fdeeadd87692333aeafb69b0b88a1
+-- 
+-- TODO LORIS: write better
+-- Adjustments:
+-- * set tri-state MISO when r_spi_cs_n is high;
+-- * stretch available time to set i_din and i_din_vld.
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -47,6 +52,7 @@ architecture RTL of SPISlave is
   signal w_slave_ready      : std_logic;
   signal r_shreg_busy       : std_logic;
   signal w_rx_data_vld      : std_logic;
+  signal r_rx_data_vld      : std_logic;
   signal r_spi_miso         : std_logic;
 
 begin
@@ -135,12 +141,30 @@ begin
   end process;
 
   -- -------------------------------------------------------------------------
-  --  RECEIVED DATA VALID FLAG
+  --  RECEIVED DATA VALID FLAG AND REGISTER
   -- -------------------------------------------------------------------------
 
   -- Received data from master are valid when falling edge of SPI clock is
   -- detected and the last bit of received byte is detected.
   w_rx_data_vld <= w_spi_clk_fedge_en and r_last_bit_en;
+
+  -- Received data valid register remains asserted until the next rising edge
+  -- of SPI clock is detected. This stretches the time available for setting
+  -- i_din and i_din_vld before the next byte is sent.
+  process (i_clk)
+  begin
+    if (rising_edge(i_clk)) then
+      if (i_rst = '1') then
+        r_rx_data_vld <= '0';
+      else
+        if (w_rx_data_vld = '1') then
+          r_rx_data_vld <= '1';
+        elsif (w_spi_clk_redge_en = '1') then
+          r_rx_data_vld <= '0';
+        end if;
+      end if;
+    end if;
+  end process;
 
   -- -------------------------------------------------------------------------
   --  SHIFT REGISTER BUSY FLAG REGISTER
@@ -166,7 +190,7 @@ begin
 
   -- The SPI slave is ready for accept new input data when r_spi_cs_n is assert and
   -- shift register not busy or when received data are valid.
-  w_slave_ready <= (r_spi_cs_n and not r_shreg_busy) or w_rx_data_vld;
+  w_slave_ready <= (r_spi_cs_n and not r_shreg_busy) or r_rx_data_vld;
 
   -- The new input data is loaded into the shift register when the SPI slave
   -- is ready and input data are valid.
