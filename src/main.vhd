@@ -44,7 +44,7 @@ architecture RTL of SPIFIFO is
   signal w_din_rdy      : std_logic;
   signal w_dout         : std_logic_vector(WORD_SIZE-1 downto 0);
   signal w_dout_vld     : std_logic;
-  signal r_preload_miso : std_logic;
+  signal r_preload_miso : std_logic; -- Indicates first byte to be sent after command
 
   -- Signals for FIFO
   signal r_fifo_wr_en : std_logic;
