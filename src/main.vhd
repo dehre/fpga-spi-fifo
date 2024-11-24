@@ -156,14 +156,9 @@ begin
               r_state <= IDLE; -- Return to IDLE if transaction ends
               r_tx_valid <= '0';
             else
-              if r_preload_miso = '1' then
+              if r_preload_miso = '1' or w_dout_vld = '1' then
                 r_preload_miso <= '0';
                 -- TODO LORIS: use real data
-                r_tx_data <= std_logic_vector(to_unsigned(74, 8));
-                r_tx_valid <= '1';
-              elsif w_dout_vld = '1' then
-                -- TODO LORIS: use real data
-                -- TODO LORIS: remove duplicate, or just send zeroes thereafter?
                 r_tx_data <= std_logic_vector(to_unsigned(74, 8));
                 r_tx_valid <= '1';
               else
