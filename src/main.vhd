@@ -193,24 +193,26 @@ begin
               r_tx_valid <= '0';
               r_fifo_rd_en <= '0';
             else
-              if w_din_rdy = '1' then
+              if r_preload_miso = '1' or w_dout_vld = '1' then
                 if w_fifo_empty = '1' then
-                  r_fifo_rd_en <= '0'; -- No read enable since FIFO is empty
+                  r_preload_miso <= '0';
                   r_tx_data <= EMPTY_BYTE;
-                  r_tx_valid <= '1'; -- Signal SPI slave that data is valid to send
+                  r_tx_valid <= '1';
                 else
                   if w_fifo_rd_dv = '1' then
+                    r_preload_miso <= '0';
                     r_fifo_rd_en <= '0'; -- Deassert read enable (read complete)
-                    r_tx_data <= w_fifo_data_out; -- Transmit valid FIFO data
-                    r_tx_valid <= '1'; -- Signal SPI slave that data is valid to send
+                    r_tx_data <= w_fifo_data_out;
+                    r_tx_valid <= '1';
                   else
+                    -- TODO LORIS: data is requested, but never comes to reading because,
+                    -- by the time the fifo is ready, w_dout_vld is back to '0'
                     r_fifo_rd_en <= '1'; -- Request next data from FIFO
-                    r_tx_valid <= '0'; -- Signal SPI slave that data is not yet valid to send
                   end if;
                 end if;
               else
-                r_tx_valid <= '0'; -- No valid data for SPI slave
-                r_fifo_rd_en <= '0'; -- Deassert read enable
+                r_tx_valid <= '0';
+                r_fifo_rd_en <= '0';
               end if;
             end if;
 
