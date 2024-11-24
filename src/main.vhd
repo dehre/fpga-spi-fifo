@@ -40,10 +40,11 @@ architecture RTL of SPIFIFO is
   constant FULL_BYTE  : std_logic_vector(7 downto 0) := x"FF";
 
   -- Signals for SPI Slave
-  constant WORD_SIZE : integer := 8;
-  signal w_din_rdy   : std_logic;
-  signal w_dout      : std_logic_vector(WORD_SIZE-1 downto 0);
-  signal w_dout_vld  : std_logic;
+  constant WORD_SIZE    : integer := 8;
+  signal w_din_rdy      : std_logic;
+  signal w_dout         : std_logic_vector(WORD_SIZE-1 downto 0);
+  signal w_dout_vld     : std_logic;
+  signal r_preload_miso : std_logic;
 
   -- Signals for FIFO
   signal r_fifo_wr_en : std_logic;
@@ -115,6 +116,7 @@ begin
     if rising_edge(i_clk) then
       if i_rst = '1' then
         -- Reset state
+        r_preload_miso <= '0';
         r_state <= IDLE;
         r_command <= (others => '0');
         r_tx_data <= (others => '0');
@@ -139,6 +141,7 @@ begin
               case r_command is
                 when CMD_STATUS =>
                   r_state <= STATUS;
+                  r_preload_miso <= '1';
                 when CMD_WRITE =>
                   r_state <= WRITE;
                 when CMD_READ =>
@@ -153,10 +156,18 @@ begin
               r_state <= IDLE; -- Return to IDLE if transaction ends
               r_tx_valid <= '0';
             else
-              if w_din_rdy = '1' then
+              if r_preload_miso = '1' then
+                r_preload_miso <= '0';
                 -- TODO LORIS: use real data
                 r_tx_data <= std_logic_vector(to_unsigned(74, 8));
                 r_tx_valid <= '1';
+              elsif w_dout_valid = '1' then
+                -- TODO LORIS: use real data
+                -- TODO LORIS: remove duplicate, or just send zeroes thereafter?
+                r_tx_data <= std_logic_vector(to_unsigned(74, 8));
+                r_tx_valid <= '1';
+              else
+                r_tx_valid <= '0';
               end if;
             end if;
 
