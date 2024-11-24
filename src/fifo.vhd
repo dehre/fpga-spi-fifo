@@ -82,14 +82,14 @@ begin
   -- Main process to control address and counters for FIFO
   process (i_clk, i_rst_l) is
   begin
-    if not i_rst_l then
+    if i_rst_l = '0' then
       r_wr_addr <= 0;
       r_rd_addr <= 0;
       r_count   <= 0;
     elsif rising_edge(i_clk) then
       
       -- Write
-      if i_wr_dv then
+      if i_wr_dv = '1' then
         if r_wr_addr = DEPTH-1 then
           r_wr_addr <= 0;
         else
@@ -98,7 +98,7 @@ begin
       end if;
 
       -- Read
-      if i_rd_en then
+      if i_rd_en = '1' then
         if r_rd_addr = DEPTH-1 then
           r_rd_addr <= 0;
         else
