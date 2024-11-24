@@ -131,6 +131,7 @@ begin
           when IDLE =>
             if w_dout_vld = '1' then
               r_command <= w_dout;
+              r_preload_miso <= '1'; -- Remember w_dout_vld when command is processed
               r_state <= PROCESS_CMD;
             end if;
 
@@ -141,7 +142,6 @@ begin
               case r_command is
                 when CMD_STATUS =>
                   r_state <= STATUS;
-                  r_preload_miso <= '1';
                 when CMD_WRITE =>
                   r_state <= WRITE;
                 when CMD_READ =>
@@ -169,17 +169,20 @@ begin
           when WRITE =>
             if i_spi_cs_n = '1' then
               r_state <= IDLE; -- Return to IDLE if transaction ends
-              r_fifo_wr_en <= '0'; -- Disable write enable when exiting
+              r_tx_valid <= '0';
+              r_fifo_wr_en <= '0';
             else
-              if w_dout_vld = '1' then
+              if r_preload_miso = '1' or w_dout_vld = '1' then
+                r_preload_miso <= '0';
                 if w_fifo_full = '1' then
                   r_tx_data <= FULL_BYTE;
                   r_tx_valid <= '1';
                 else
-                  r_fifo_wr_en <= '1';
                   r_fifo_data_in <= w_dout;
+                  r_fifo_wr_en <= '1';
                 end if;
               else
+                r_tx_valid <= '0';
                 r_fifo_wr_en <= '0';
               end if;
             end if;
@@ -187,8 +190,8 @@ begin
           when READ =>
             if i_spi_cs_n = '1' then
               r_state <= IDLE; -- Return to IDLE if transaction ends
-              r_tx_valid <= '0'; -- Disable transmit valid when exiting
-              r_fifo_rd_en <= '0'; -- Disable read enable when exiting
+              r_tx_valid <= '0';
+              r_fifo_rd_en <= '0';
             else
               if w_din_rdy = '1' then
                 if w_fifo_empty = '1' then
