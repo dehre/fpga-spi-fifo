@@ -35,14 +35,10 @@ architecture RTL of SPIFIFO is
 
   -- Constants for SPI commands - Inputs
   constant CMD_STATUS : std_logic_vector(7 downto 0) := x"FA";
-  constant CMD_READ   : std_logic_vector(7 downto 0) := x"FB";
-  constant CMD_WRITE  : std_logic_vector(7 downto 0) := x"FC";
 
   -- Constants for SPI commands - Outputs
   constant ACK         : std_logic_vector(7 downto 0) := x"AA";
   constant NACK        : std_logic_vector(7 downto 0) := x"BB";
-  constant FIFO_EMPTY  : std_logic_vector(7 downto 0) := x"FE";
-  constant FIFO_FULL   : std_logic_vector(7 downto 0) := x"FF";
 
   -- Halve the clock for debugging
   signal i_clk : std_logic;
@@ -54,11 +50,9 @@ architecture RTL of SPIFIFO is
   signal w_spi_dout     : std_logic_vector(WORD_SIZE-1 downto 0);
   signal w_spi_dout_vld : std_logic;
 
--- TODO LORIS: keep track of number of items in fifo,
--- or maybe just expose the count register in the FIFO.
--- signal r_fifo_count : natural range 0 to 99;
-
 begin
+
+  o_debug_a <= '0';
 
   process(i_clk_dbl)
   begin
@@ -92,7 +86,6 @@ begin
         -- Reset state
         r_spi_din <= (others => '0');
         r_spi_din_vld <= '0';
-        o_debug_a <= '0';
         o_debug_b <= '0';
         o_debug_c <= '0';
 
