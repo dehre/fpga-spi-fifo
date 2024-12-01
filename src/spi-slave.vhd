@@ -1,5 +1,10 @@
 -- Adapted from:
 -- https://github.com/jakubcabal/spi-fpga/tree/d8240ff3f59fdeeadd87692333aeafb69b0b88a1
+--
+-- TODO LORIS: write better
+-- Changes:
+-- * set MISO to high impedance state when inactive;
+-- * stretch o_din_rdy to two clock cycles to allow setting response in state machine
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -45,6 +50,7 @@ architecture RTL of SPISlave is
   signal w_load_data_en     : std_logic;
   signal r_data_shreg       : std_logic_vector(WORD_SIZE-1 downto 0);
   signal w_slave_ready      : std_logic;
+  signal r_slave_ready      : std_logic;
   signal r_shreg_busy       : std_logic;
   signal w_rx_data_vld      : std_logic;
   signal r_spi_miso         : std_logic;
@@ -168,9 +174,17 @@ begin
   -- shift register not busy or when received data are valid.
   w_slave_ready <= (r_spi_cs_n and not r_shreg_busy) or w_rx_data_vld;
 
+  -- Stretch `w_slave_ready` to another clock cycle.
+  process (i_clk)
+  begin
+    if (rising_edge(i_clk)) then
+      r_slave_ready <= w_slave_ready;
+    end if;
+  end process;
+
   -- The new input data is loaded into the shift register when the SPI slave
   -- is ready and input data are valid.
-  w_load_data_en <= w_slave_ready and i_din_vld;
+  w_load_data_en <= r_slave_ready and i_din_vld;
 
   -- -------------------------------------------------------------------------
   --  DATA SHIFT REGISTER
@@ -213,7 +227,7 @@ begin
   --  ASSIGNING OUTPUT SIGNALS
   -- -------------------------------------------------------------------------
 
-  o_din_rdy  <= w_slave_ready;
+  o_din_rdy  <= (w_slave_ready or r_slave_ready);
   o_dout     <= r_data_shreg;
   o_dout_vld <= w_rx_data_vld;
 

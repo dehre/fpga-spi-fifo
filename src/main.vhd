@@ -120,7 +120,7 @@ begin
         case r_state is
 
           when IDLE =>
-            if w_spi_din_rdy = '1' then
+            if w_spi_din_rdy = '1' and w_spi_dout_vld = '1' then
               case w_spi_dout is
                 when CMD_STATUS =>
                   r_state <= STATUS;
@@ -175,7 +175,7 @@ begin
             if i_spi_cs_n = '1' then
               r_state <= IDLE;
             else
-              if w_spi_din_rdy = '1' then
+              if w_spi_din_rdy = '1' and w_spi_dout_vld = '1' then
                 -- TODO LORIS: use real data
                 r_spi_din <= std_logic_vector(to_unsigned(74, 8));
                 r_spi_din_vld <= '1';
@@ -188,7 +188,7 @@ begin
             if i_spi_cs_n = '1' then
               r_state <= IDLE;
             else
-              if w_spi_din_rdy = '1' then
+              if w_spi_din_rdy = '1' and w_spi_dout_vld = '1' then
                 if w_fifo_full = '1' then
                   r_spi_din <= NACK;
                   r_spi_din_vld <= '1';
@@ -211,7 +211,7 @@ begin
               -- TODO LORIS: if fifo not empty, bump read_idx back, so that
               -- no byte is lost due to prefetch.
             else
-              if w_spi_din_rdy = '1' then
+              if w_spi_din_rdy = '1' and w_spi_dout_vld = '1' then
                 if w_fifo_empty = '1' then
                   r_spi_din <= FIFO_EMPTY;
                   r_spi_din_vld <= '1';
