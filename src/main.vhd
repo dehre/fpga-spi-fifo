@@ -167,7 +167,7 @@ begin
 
           when STATUS =>
             if i_spi_cs_n = '1' then
-              r_state <= IDLE; -- Return to IDLE if transaction ends
+              r_state <= IDLE;
             else
               if w_spi_din_rdy = '1' then
                 -- TODO LORIS: use real data
@@ -180,14 +180,14 @@ begin
 
           when WRITE =>
             if i_spi_cs_n = '1' then
-              r_state <= IDLE; -- Return to IDLE if transaction ends
+              r_state <= IDLE;
             else
               if w_spi_din_rdy = '1' then
-                -- TODO LORIS: almost-full or full instead
                 if w_fifo_full = '1' then
-                  r_spi_din <= FIFO_FULL;
+                  r_spi_din <= NACK;
                   r_spi_din_vld <= '1';
                 else
+                  -- TODO LORIS: if FULL-1, send FULL
                   r_spi_din <= ACK;
                   r_spi_din_vld <= '1';
                   r_fifo_wr_data <= w_spi_dout;
@@ -199,12 +199,11 @@ begin
               end if;
             end if;
 
-          -- TODO LORIS: considering that we prefetch the READ data, one byte
-          -- is always lost if the master terminates the communication before
-          -- before all bytes are read.
           when READ =>
             if i_spi_cs_n = '1' then
-              r_state <= IDLE; -- Return to IDLE if transaction ends
+              r_state <= IDLE;
+              -- TODO LORIS: if fifo not empty, bump read_idx back, so that
+              -- no byte is lost due to prefetch.
             else
               if w_spi_din_rdy = '1' then
                 if w_fifo_empty = '1' then
@@ -216,7 +215,7 @@ begin
                   r_fifo_rd_en <= '1'; -- Prefetch next data
                 end if;
               else
-                r_fifo_rd_en <= '0'; -- Deassert read enable (read complete)
+                r_fifo_rd_en <= '0';
                 r_spi_din_vld <= '0';
               end if;
             end if;
