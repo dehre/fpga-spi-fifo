@@ -11,7 +11,6 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity SPIFIFO is
-  -- Inputs/Outputs for the top module.
   port (
     -- Debugging Outputs
     o_debug_a  : out std_logic;
@@ -20,7 +19,7 @@ entity SPIFIFO is
 
     -- Control/Data Signals
     i_rst      : in  std_logic;     -- FPGA Reset
-    i_clk_dbl      : in  std_logic;     -- FPGA Clock
+    i_clk_dbl  : in  std_logic;     -- FPGA Clock
 
     -- SPI Interface
     i_spi_clk  : in  std_logic;     -- SPI Clock
@@ -90,18 +89,17 @@ begin
         o_debug_c <= '0';
 
       else
+
         if w_spi_din_rdy = '1' and w_spi_dout_vld = '1' then
           case w_spi_dout is
             when CMD_STATUS =>
               o_debug_b <= '1';
               r_spi_din <= ACK;
               r_spi_din_vld <= '1';
-
             when others =>
               o_debug_c <= '1';
               r_spi_din <= NACK;
               r_spi_din_vld <= '1';
-
           end case;
         else
           r_spi_din_vld <= '0';
@@ -109,8 +107,8 @@ begin
           o_debug_c <= '0';
         end if;
 
-      end if;
-    end if;
+      end if; -- if i_rst = '1'
+    end if; -- if rising_edge(i_clk)
   end process;
 
 end architecture;
