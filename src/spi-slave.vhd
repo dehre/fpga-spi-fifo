@@ -53,6 +53,7 @@ architecture RTL of SPI_SLAVE is
     signal load_data_en       : std_logic;
     signal data_shreg         : std_logic_vector(WORD_SIZE-1 downto 0);
     signal slave_ready        : std_logic;
+    signal r2_slave_ready     : std_logic;
     signal shreg_busy         : std_logic;
     signal rx_data_vld        : std_logic;
 
@@ -174,10 +175,18 @@ begin
     -- The SPI slave is ready for accept new input data when cs_n_reg is assert and
     -- shift register not busy or when received data are valid.
     slave_ready <= (cs_n_reg and not shreg_busy) or rx_data_vld;
+
+    process (CLK)
+    begin
+        if (rising_edge(CLK)) then
+            r2_slave_ready <= slave_ready;
+        end if;
+    end process;
     
     -- The new input data is loaded into the shift register when the SPI slave
     -- is ready and input data are valid.
-    load_data_en <= slave_ready and DIN_VLD;
+    -- load_data_en <= (slave_ready or r2_slave_ready) and DIN_VLD;
+    load_data_en <= r2_slave_ready and DIN_VLD;
 
     -- -------------------------------------------------------------------------
     --  DATA SHIFT REGISTER
@@ -217,7 +226,7 @@ begin
     --  ASSIGNING OUTPUT SIGNALS
     -- -------------------------------------------------------------------------
     
-    DIN_RDY  <= slave_ready;
+    DIN_RDY  <= (slave_ready or r2_slave_ready);
     DOUT     <= data_shreg;
     DOUT_VLD <= rx_data_vld;
 

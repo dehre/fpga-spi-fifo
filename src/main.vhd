@@ -26,6 +26,7 @@ architecture RTL of SPIFIFO is
 
   -- Constants for SPI commands - Inputs
   constant CMD_STATUS : std_logic_vector(7 downto 0) := x"FA";
+  constant CMD_READ : std_logic_vector(7 downto 0) := x"FB";
 
   -- Constants for SPI commands - Outputs
   constant ACK         : std_logic_vector(7 downto 0) := x"AA";
@@ -79,9 +80,13 @@ begin
 
       else
 
-        if w_spi_dout_vld = '1' then
+        if w_spi_din_rdy = '1' and w_spi_dout_vld = '1' then
           case w_spi_dout is
             when CMD_STATUS =>
+              o_debug_c <= '1';
+              r_spi_din <= ACK;
+              r_spi_din_vld <= '1';
+            when CMD_READ =>
               o_debug_c <= '1';
               r_spi_din <= ACK;
               r_spi_din_vld <= '1';
@@ -90,11 +95,9 @@ begin
               r_spi_din <= NACK;
               r_spi_din_vld <= '1';
           end case;
-        elsif w_spi_din_rdy = '1' then
+        else
           r_spi_din_vld <= '0';
           o_debug_c <= '0';
-        else
-          r_spi_din_vld <= r_spi_din_vld;
         end if;
 
       end if; -- if i_rst = '1'
