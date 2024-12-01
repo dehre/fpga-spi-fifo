@@ -125,36 +125,42 @@ begin
                 when CMD_STATUS =>
                   r_state <= STATUS;
                   -- TODO LORIS: abstract to function
-                  r_spi_din_vld <= '1';
                   if w_fifo_full = '1' then
                     r_spi_din <= FIFO_FULL;
+                    r_spi_din_vld <= '1';
                   elsif w_fifo_empty = '1' then
                     r_spi_din <= FIFO_EMPTY;
+                    r_spi_din_vld <= '1';
                   else
                     r_spi_din <= ACK;
+                    r_spi_din_vld <= '1';
                   end if;
                 when CMD_WRITE =>
                   r_state <= WRITE;
                   -- TODO LORIS: abstract to function
-                  r_spi_din_vld <= '1';
                   if w_fifo_full = '1' then
                     r_spi_din <= FIFO_FULL;
+                    r_spi_din_vld <= '1';
                   elsif w_fifo_empty = '1' then
                     r_spi_din <= FIFO_EMPTY;
+                    r_spi_din_vld <= '1';
                   else
                     r_spi_din <= ACK;
+                    r_spi_din_vld <= '1';
                   end if;
                 when CMD_READ =>
                   r_state <= READ;
                   r_fifo_rd_en <= '1'; -- Prefetch next data
                   -- TODO LORIS: abstract to function
-                  r_spi_din_vld <= '1';
                   if w_fifo_full = '1' then
                     r_spi_din <= FIFO_FULL;
+                    r_spi_din_vld <= '1';
                   elsif w_fifo_empty = '1' then
                     r_spi_din <= FIFO_EMPTY;
+                    r_spi_din_vld <= '1';
                   else
                     r_spi_din <= ACK;
+                    r_spi_din_vld <= '1';
                   end if;
                 when others =>
                   r_state <= IDLE; -- Unknown command, remain to IDLE
