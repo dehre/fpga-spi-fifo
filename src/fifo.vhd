@@ -1,157 +1,133 @@
--- Russell Merrick - http://www.nandland.com
+-------------------------------------------------------------------------------
+-- File Downloaded from http://www.nandland.com
 --
--- Infers a Dual Port RAM (DPRAM) Based FIFO using a single clock
--- Uses a Dual Port RAM but automatically handles read/write addresses.
--- To use Almost Full/Empty Flags (dynamic)
--- Set i_af_level to number of words away from full when o_af_flag goes high
--- Set i_ae_level to number of words away from empty when o_ae_flag goes high
---   o_ae_flag is high when this number OR LESS is in FIFO.
+-- Description: Creates a Synchronous FIFO made out of registers.
+--              Generic: g_WIDTH sets the width of the FIFO created.
+--              Generic: g_DEPTH sets the depth of the FIFO created.
 --
--- Generics: 
--- WIDTH     - Width of the FIFO
--- DEPTH     - Max number of items able to be stored in the FIFO
+--              Total FIFO register usage will be width * depth
+--              Note that this fifo should not be used to cross clock domains.
+--              (Read and write clocks NEED TO BE the same clock domain)
 --
--- This FIFO cannot be used to cross clock domains, because in order to keep count
--- correctly it would need to handle all metastability issues. 
--- If crossing clock domains is required, use FIFO primitives directly from the vendor.
-
+--              FIFO Full Flag will assert as soon as last word is written.
+--              FIFO Empty Flag will assert as soon as last word is read.
+--
+--              FIFO is 100% synthesizable.  It uses assert statements which do
+--              not synthesize, but will cause your simulation to crash if you
+--              are doing something you shouldn't be doing (reading from an
+--              empty FIFO or writing to a full FIFO).
+--
+--              No Flags = No Almost Full (AF)/Almost Empty (AE) Flags
+--              There is a separate module that has programmable AF/AE flags.
+-------------------------------------------------------------------------------
+ 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use ieee.math_real.all;
-
-entity FIFO is 
-  generic (
-    WIDTH     : integer := 8;
-    DEPTH     : integer := 256);
-  port (
-    i_rst_l : in std_logic;
-    i_clk   : in std_logic;
-    -- Write Side
-    i_wr_dv    : in  std_logic;
-    i_wr_data  : in  std_logic_vector(WIDTH-1 downto 0);
-    i_af_level : in  integer;
-    o_af_flag  : out std_logic;
-    o_full     : out std_logic;
-    -- Read Side
-    i_rd_en    : in  std_logic;
-    o_rd_dv    : out std_logic;
-    o_rd_data  : out std_logic_vector(WIDTH-1 downto 0);
-    i_ae_level : in  integer;
-    o_ae_flag  : out std_logic;
-    o_empty    : out std_logic);
-end entity FIFO;
-
-architecture RTL of FIFO is 
-  
-  -- Number of bits required to store DEPTH words
-  constant DEPTH_BITS : integer := integer(ceil(log2(real(DEPTH))));
-
-  signal r_wr_addr, r_rd_addr : natural range 0 to DEPTH-1;
-  signal r_count : natural range 0 to DEPTH;  -- 1 extra to go to DEPTH
  
-  signal w_rd_dv : std_logic;
-  signal w_rd_data : std_logic_vector(WIDTH-1 downto 0);
-
-  signal w_wr_addr, w_rd_addr : std_logic_vector(DEPTH_BITS-1 downto 0);
-
+entity module_fifo_regs_no_flags is
+  generic (
+    g_WIDTH : natural := 8;
+    g_DEPTH : integer := 32
+    );
+  port (
+    i_rst_sync : in std_logic;
+    i_clk      : in std_logic;
+ 
+    -- FIFO Write Interface
+    i_wr_en   : in  std_logic;
+    i_wr_data : in  std_logic_vector(g_WIDTH-1 downto 0);
+    o_full    : out std_logic;
+ 
+    -- FIFO Read Interface
+    i_rd_en   : in  std_logic;
+    o_rd_data : out std_logic_vector(g_WIDTH-1 downto 0);
+    o_empty   : out std_logic
+    );
+end module_fifo_regs_no_flags;
+ 
+architecture rtl of module_fifo_regs_no_flags is
+ 
+  type t_FIFO_DATA is array (0 to g_DEPTH-1) of std_logic_vector(g_WIDTH-1 downto 0);
+  signal r_FIFO_DATA : t_FIFO_DATA := (others => (others => '0'));
+ 
+  signal r_WR_INDEX   : integer range 0 to g_DEPTH-1 := 0;
+  signal r_RD_INDEX   : integer range 0 to g_DEPTH-1 := 0;
+ 
+  -- # Words in FIFO, has extra range to allow for assert conditions
+  signal r_FIFO_COUNT : integer range -1 to g_DEPTH+1 := 0;
+ 
+  signal w_FULL  : std_logic;
+  signal w_EMPTY : std_logic;
+   
 begin
-
-  w_wr_addr <= std_logic_vector(to_unsigned(r_wr_addr, DEPTH_BITS));
-  w_rd_addr <= std_logic_vector(to_unsigned(r_rd_addr, DEPTH_BITS));
-
-  -- Dual Port RAM used for storing FIFO data
-  RAMInstance : entity work.RAM_2Port
-    generic map(
-      WIDTH => WIDTH,
-      DEPTH => DEPTH)
-    port map(
-      -- Write Port
-      i_wr_clk  => i_clk,
-      i_wr_addr => w_wr_addr,
-      i_wr_dv   => i_wr_dv,
-      i_wr_data => i_wr_data,
-
-      -- Read Port
-      i_rd_clk  => i_clk,
-      i_rd_addr => w_rd_addr,
-      i_rd_en   => i_rd_en,
-      o_rd_dv   => w_rd_dv,
-      o_rd_data => w_rd_data);
-
-  -- Main process to control address and counters for FIFO
-  process (i_clk, i_rst_l) is
-  begin
-    if i_rst_l = '0' then
-      r_wr_addr <= 0;
-      r_rd_addr <= 0;
-      r_count   <= 0;
-    elsif rising_edge(i_clk) then
-      
-      -- Write
-      if i_wr_dv = '1' then
-        if r_wr_addr = DEPTH-1 then
-          r_wr_addr <= 0;
-        else
-          r_wr_addr <= r_wr_addr + 1;
-        end if;
-      end if;
-
-      -- Read
-      if i_rd_en = '1' then
-        if r_rd_addr = DEPTH-1 then
-          r_rd_addr <= 0;
-        else
-          r_rd_addr <= r_rd_addr + 1;
-        end if;
-      end if;
-
-      -- Keeps track of number of words in FIFO
-      -- Read with no write
-      if i_rd_en = '1' and i_wr_dv = '0' then
-        if (r_count /= 0) then
-          r_count <= r_count - 1;
-        end if;
-      -- Write with no read
-      elsif i_wr_dv = '1' and i_rd_en = '0' then
-        if r_count /= DEPTH then
-          r_count <= r_count + 1;
-        end if;
-      end if;
-
-      if i_rd_en = '1' then
-        o_rd_data <= w_rd_data;
-      end if;
-
-    end if;
-  end process;
-
-  o_full <= '1' when ((r_count = DEPTH) or (r_count = DEPTH-1 and i_wr_dv = '1' and i_rd_en = '0')) else '0';
-  
-  o_empty <= '1' when (r_count = 0) else '0';
-
-  o_af_flag <= '1' when (r_count > DEPTH - i_af_level) else '0';
-  o_ae_flag <= '1' when (r_count < i_ae_level) else '0';
-
-  o_rd_dv <= w_rd_dv;
-
-  ----------------------------------------------------------------------------
-  -- ASSERTION CODE, NOT SYNTHESIZED
-  -- synthesis translate_off
-  -- Ensures that we never read from empty FIFO or write to full FIFO.
-  process (i_clk) is
+ 
+  p_CONTROL : process (i_clk) is
   begin
     if rising_edge(i_clk) then
-      if (i_rd_en = '1' and i_wr_dv = '0' and r_count = 0) then
-        assert false report "Error! Reading Empty FIFO";
+      if i_rst_sync = '1' then
+        r_FIFO_COUNT <= 0;
+        r_WR_INDEX   <= 0;
+        r_RD_INDEX   <= 0;
+      else
+ 
+        -- Keeps track of the total number of words in the FIFO
+        if (i_wr_en = '1' and i_rd_en = '0') then
+          r_FIFO_COUNT <= r_FIFO_COUNT + 1;
+        elsif (i_wr_en = '0' and i_rd_en = '1') then
+          r_FIFO_COUNT <= r_FIFO_COUNT - 1;
+        end if;
+ 
+        -- Keeps track of the write index (and controls roll-over)
+        if (i_wr_en = '1' and w_FULL = '0') then
+          if r_WR_INDEX = g_DEPTH-1 then
+            r_WR_INDEX <= 0;
+          else
+            r_WR_INDEX <= r_WR_INDEX + 1;
+          end if;
+        end if;
+ 
+        -- Keeps track of the read index (and controls roll-over)        
+        if (i_rd_en = '1' and w_EMPTY = '0') then
+          if r_RD_INDEX = g_DEPTH-1 then
+            r_RD_INDEX <= 0;
+          else
+            r_RD_INDEX <= r_RD_INDEX + 1;
+          end if;
+        end if;
+ 
+        -- Registers the input data when there is a write
+        if i_wr_en = '1' then
+          r_FIFO_DATA(r_WR_INDEX) <= i_wr_data;
+        end if;
+         
+      end if;                           -- sync reset
+    end if;                             -- rising_edge(i_clk)
+  end process p_CONTROL;
+   
+  o_rd_data <= r_FIFO_DATA(r_RD_INDEX);
+ 
+  w_FULL  <= '1' when r_FIFO_COUNT = g_DEPTH else '0';
+  w_EMPTY <= '1' when r_FIFO_COUNT = 0       else '0';
+ 
+  o_full  <= w_FULL;
+  o_empty <= w_EMPTY;
+   
+  -- ASSERTION LOGIC - Not synthesized
+  -- synthesis translate_off
+ 
+  p_ASSERT : process (i_clk) is
+  begin
+    if rising_edge(i_clk) then
+      if i_wr_en = '1' and w_FULL = '1' then
+        report "ASSERT FAILURE - MODULE_REGISTER_FIFO: FIFO IS FULL AND BEING WRITTEN " severity failure;
       end if;
-
-      if (i_wr_dv = '1' and i_rd_en = '0' and r_count = DEPTH) then
-        assert false report "Error! Writing Full FIFO";
+ 
+      if i_rd_en = '1' and w_EMPTY = '1' then
+        report "ASSERT FAILURE - MODULE_REGISTER_FIFO: FIFO IS EMPTY AND BEING READ " severity failure;
       end if;
     end if;
-  end process;
+  end process p_ASSERT;
+ 
   -- synthesis translate_on
-  ----------------------------------------------------------------------------
-  
-end RTL;
+end rtl;
