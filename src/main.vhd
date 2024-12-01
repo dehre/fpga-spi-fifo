@@ -52,12 +52,14 @@ architecture RTL of SPIFIFO is
   signal w_spi_dout_vld : std_logic;
 
   -- Signals for FIFO
-  signal r_fifo_wr_en   : std_logic;
-  signal r_fifo_rd_en   : std_logic;
-  signal r_fifo_wr_data : std_logic_vector(7 downto 0);
-  signal w_fifo_rd_data : std_logic_vector(7 downto 0);
-  signal w_fifo_full    : std_logic;
-  signal w_fifo_empty   : std_logic;
+  signal r_fifo_wr_en        : std_logic;
+  signal r_fifo_rd_en        : std_logic;
+  signal r_fifo_wr_data      : std_logic_vector(7 downto 0);
+  signal w_fifo_rd_data      : std_logic_vector(7 downto 0);
+  signal w_fifo_full         : std_logic;
+  signal w_fifo_empty        : std_logic;
+  signal w_fifo_almost_full  : std_logic;
+  signal w_fifo_almost_empty : std_logic;
 
 -- TODO LORIS: keep track of number of items in fifo,
 -- or maybe just expose the count register in the FIFO.
@@ -91,8 +93,12 @@ begin
       o_dout_vld => w_spi_dout_vld      -- Valid signal for received data
     );
 
-  FIFOInstance : entity work.module_fifo_regs_no_flags
-    generic map(g_WIDTH => WORD_SIZE, g_DEPTH => 100)
+  FIFOInstance : entity work.module_fifo_regs_with_flags
+    generic map(
+      g_WIDTH => WORD_SIZE,
+      g_DEPTH => 100,
+      g_AF_LEVEL => 97,
+      g_AE_LEVEL => 2)
     port map (
       i_rst_sync => i_rst,
       i_clk      => i_clk,
@@ -101,7 +107,9 @@ begin
       o_rd_data  => w_fifo_rd_data,
       i_rd_en    => r_fifo_rd_en,
       o_full     => w_fifo_full,
-      o_empty    => w_fifo_empty);
+      o_empty    => w_fifo_empty,
+      o_af       => w_fifo_almost_full,
+      o_ae       => w_fifo_almost_empty);
 
   -- Main process to control SPI commands
   process (i_clk)
