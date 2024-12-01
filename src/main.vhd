@@ -43,8 +43,6 @@ architecture RTL of SPIFIFO is
 
 begin
 
-  o_debug_a <= '0';
-
   process(i_clk_dbl)
   begin
     if rising_edge(i_clk_dbl) then
@@ -77,15 +75,14 @@ begin
         -- Reset state
         r_spi_din <= (others => '0');
         r_spi_din_vld <= '0';
-        o_debug_b <= '0';
         o_debug_c <= '0';
 
       else
 
-        if w_spi_din_rdy = '1' and w_spi_dout_vld = '1' then
+        if w_spi_dout_vld = '1' then
           case w_spi_dout is
             when CMD_STATUS =>
-              o_debug_b <= '1';
+              o_debug_c <= '1';
               r_spi_din <= ACK;
               r_spi_din_vld <= '1';
             when others =>
@@ -95,12 +92,16 @@ begin
           end case;
         elsif w_spi_din_rdy = '1' then
           r_spi_din_vld <= '0';
-          o_debug_b <= '0';
           o_debug_c <= '0';
+        else
+          r_spi_din_vld <= r_spi_din_vld;
         end if;
 
       end if; -- if i_rst = '1'
     end if; -- if rising_edge(i_clk)
   end process;
+
+  o_debug_a <= w_spi_din_rdy;
+  o_debug_b <= w_spi_dout_vld;
 
 end architecture;
