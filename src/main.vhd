@@ -120,7 +120,7 @@ begin
         case r_state is
 
           when IDLE =>
-            if w_spi_dout_vld = '1' then
+            if w_spi_din_rdy = '1' then
               case w_spi_dout is
                 when CMD_STATUS =>
                   r_state <= STATUS;
@@ -169,9 +169,7 @@ begin
             if i_spi_cs_n = '1' then
               r_state <= IDLE; -- Return to IDLE if transaction ends
             else
-              -- TODO LORIS: maybe should use din_rdy instead.
-              -- If so, use it also for WRITE and READ.
-              if w_spi_dout_vld = '1' then
+              if w_spi_din_rdy = '1' then
                 -- TODO LORIS: use real data
                 r_spi_din <= std_logic_vector(to_unsigned(74, 8));
                 r_spi_din_vld <= '1';
@@ -184,7 +182,7 @@ begin
             if i_spi_cs_n = '1' then
               r_state <= IDLE; -- Return to IDLE if transaction ends
             else
-              if w_spi_dout_vld = '1' then
+              if w_spi_din_rdy = '1' then
                 -- TODO LORIS: almost-full or full instead
                 if w_fifo_full = '1' then
                   r_spi_din <= FIFO_FULL;
@@ -208,7 +206,7 @@ begin
             if i_spi_cs_n = '1' then
               r_state <= IDLE; -- Return to IDLE if transaction ends
             else
-              if w_spi_dout_vld = '1' then
+              if w_spi_din_rdy = '1' then
                 if w_fifo_empty = '1' then
                   r_spi_din <= FIFO_EMPTY;
                   r_spi_din_vld <= '1';
