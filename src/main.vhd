@@ -31,40 +31,40 @@ end entity;
 
 architecture RTL of SPIFIFO is
 
-  -- Constants for SPI commands
+  constant WORD_SIZE   : integer := 8;
+
+  -- Constants for SPI commands - Inputs
   constant CMD_STATUS : std_logic_vector(7 downto 0) := x"FA";
   constant CMD_READ   : std_logic_vector(7 downto 0) := x"FB";
   constant CMD_WRITE  : std_logic_vector(7 downto 0) := x"FC";
 
-  constant EMPTY_BYTE : std_logic_vector(7 downto 0) := x"FE";
-  constant FULL_BYTE  : std_logic_vector(7 downto 0) := x"FF";
+  -- Constants for SPI commands - Outputs
+  constant ACK         : std_logic_vector(7 downto 0) := x"AA";
+  constant NACK        : std_logic_vector(7 downto 0) := x"BB";
+  constant FIFO_EMPTY  : std_logic_vector(7 downto 0) := x"FE";
+  constant FIFO_FULL   : std_logic_vector(7 downto 0) := x"FF";
 
   -- Signals for SPI Slave
-  constant WORD_SIZE    : integer := 8;
-  signal w_din_rdy      : std_logic;
-  signal w_dout         : std_logic_vector(WORD_SIZE-1 downto 0);
-  signal w_dout_vld     : std_logic;
-  signal r_preload_miso : std_logic; -- Indicates first byte to be sent after command
+  signal r_spi_din      : std_logic_vector(7 downto 0); -- Data to send via SPI
+  signal r_spi_din_vld  : std_logic;
+  signal w_spi_din_rdy  : std_logic;
+  signal w_spi_dout     : std_logic_vector(WORD_SIZE-1 downto 0);
+  signal w_spi_dout_vld : std_logic;
 
   -- Signals for FIFO
-  signal r_fifo_wr_en : std_logic;
-  signal r_fifo_rd_en : std_logic;
-  signal r_fifo_data_in : std_logic_vector(7 downto 0);
-  signal w_fifo_rd_dv : std_logic;
-  signal w_fifo_data_out : std_logic_vector(7 downto 0);
-  signal w_fifo_empty : std_logic;
-  signal w_fifo_full  : std_logic;
+  signal r_fifo_wr_en   : std_logic;
+  signal r_fifo_rd_en   : std_logic;
+  signal r_fifo_wr_data : std_logic_vector(7 downto 0);
+  signal w_fifo_rd_data : std_logic_vector(7 downto 0);
+  signal w_fifo_full    : std_logic;
+  signal w_fifo_empty   : std_logic;
 
--- TODO LORIS: keep track of number of items in fifo
+-- TODO LORIS: keep track of number of items in fifo,
+-- or maybe just expose the count register in the FIFO.
 -- signal r_fifo_count : natural range 0 to 99;
 
-  -- State Tracking
-  signal r_command : std_logic_vector(7 downto 0);
-  signal r_tx_data : std_logic_vector(7 downto 0); -- Data to send via SPI
-  signal r_tx_valid : std_logic;
-
   -- Internal states for managing SPI commands
-  type StateType is (IDLE, PROCESS_CMD, STATUS, WRITE, READ);
+  type StateType is (IDLE, STATUS, WRITE, READ);
   signal r_state : StateType;
 
 begin
@@ -84,31 +84,24 @@ begin
       i_spi_cs_n => i_spi_cs_n,
       i_spi_mosi => i_spi_mosi,
       o_spi_miso => o_spi_miso,
-      i_din      => r_tx_data,      -- Data to send to SPI master
-      i_din_vld  => r_tx_valid,     -- Valid signal for transmitted data
-      o_din_rdy  => w_din_rdy,      -- Ready signal for new transmit data
-      o_dout     => w_dout,         -- Data received from SPI master
-      o_dout_vld => w_dout_vld      -- Valid signal for received data
+      i_din      => r_spi_din,          -- Data to send to SPI master
+      i_din_vld  => r_spi_din_vld,      -- Valid signal for transmitted data
+      o_din_rdy  => w_spi_din_rdy,      -- Ready signal for new transmit data
+      o_dout     => w_spi_dout,         -- Data received from SPI master
+      o_dout_vld => w_spi_dout_vld      -- Valid signal for received data
     );
 
-  -- Instantiate FIFO
-  FIFOInstance : entity work.FIFO
-    generic map (WIDTH => WORD_SIZE, DEPTH => 99)
+  FIFOInstance : entity work.module_fifo_regs_no_flags
+    generic map(g_WIDTH => WORD_SIZE, g_DEPTH => 100)
     port map (
-      i_rst_l    => not i_rst, -- FIFO reset is active low
+      i_rst_sync => i_rst,
       i_clk      => i_clk,
-      i_wr_dv    => r_fifo_wr_en,
-      i_wr_data  => r_fifo_data_in,
-      i_af_level => 98,
-      o_af_flag  => open,
-      o_full     => w_fifo_full,
+      i_wr_data  => r_fifo_wr_data,
+      i_wr_en    => r_fifo_wr_en,
+      o_rd_data  => w_fifo_rd_data,
       i_rd_en    => r_fifo_rd_en,
-      o_rd_dv    => w_fifo_rd_dv,
-      o_rd_data  => w_fifo_data_out,
-      i_ae_level => 1,
-      o_ae_flag  => open,
-      o_empty    => w_fifo_empty
-    );
+      o_full     => w_fifo_full,
+      o_empty    => w_fifo_empty);
 
   -- Main process to control SPI commands
   process (i_clk)
@@ -116,12 +109,10 @@ begin
     if rising_edge(i_clk) then
       if i_rst = '1' then
         -- Reset state
-        r_preload_miso <= '0';
         r_state <= IDLE;
-        r_command <= (others => '0');
-        r_tx_data <= (others => '0');
-        r_tx_valid <= '0';
-        r_fifo_data_in <= (others => '0');
+        r_spi_din <= (others => '0');
+        r_spi_din_vld <= '0';
+        r_fifo_wr_data <= (others => '0');
         r_fifo_wr_en <= '0';
         r_fifo_rd_en <= '0';
 
@@ -129,90 +120,106 @@ begin
         case r_state is
 
           when IDLE =>
-            if w_dout_vld = '1' then
-              r_command <= w_dout;
-              r_preload_miso <= '1'; -- Remember w_dout_vld when command is processed
-              r_state <= PROCESS_CMD;
-            end if;
-
-          when PROCESS_CMD =>
-            if i_spi_cs_n = '1' then
-              r_state <= IDLE; -- Return to IDLE if transaction ends
-            else
-              case r_command is
+            if w_spi_dout_vld = '1' then
+              case w_spi_dout is
                 when CMD_STATUS =>
                   r_state <= STATUS;
+                  -- TODO LORIS: abstract to function
+                  r_spi_din_vld <= '1';
+                  if w_fifo_full = '1' then
+                    r_spi_din <= FIFO_FULL;
+                  elsif w_fifo_empty = '1' then
+                    r_spi_din <= FIFO_EMPTY;
+                  else
+                    r_spi_din <= ACK;
+                  end if;
                 when CMD_WRITE =>
                   r_state <= WRITE;
+                  -- TODO LORIS: abstract to function
+                  r_spi_din_vld <= '1';
+                  if w_fifo_full = '1' then
+                    r_spi_din <= FIFO_FULL;
+                  elsif w_fifo_empty = '1' then
+                    r_spi_din <= FIFO_EMPTY;
+                  else
+                    r_spi_din <= ACK;
+                  end if;
                 when CMD_READ =>
                   r_state <= READ;
+                  r_fifo_rd_en <= '1'; -- Prefetch next data
+                  -- TODO LORIS: abstract to function
+                  r_spi_din_vld <= '1';
+                  if w_fifo_full = '1' then
+                    r_spi_din <= FIFO_FULL;
+                  elsif w_fifo_empty = '1' then
+                    r_spi_din <= FIFO_EMPTY;
+                  else
+                    r_spi_din <= ACK;
+                  end if;
                 when others =>
-                  r_state <= IDLE; -- Unknown command, go back to IDLE
+                  r_state <= IDLE; -- Unknown command, remain to IDLE
+                  r_spi_din <= NACK;
+                  r_spi_din_vld <= '1';
               end case;
+            else
+              r_spi_din_vld <= '0';
             end if;
 
           when STATUS =>
             if i_spi_cs_n = '1' then
               r_state <= IDLE; -- Return to IDLE if transaction ends
-              r_tx_valid <= '0';
             else
-              if r_preload_miso = '1' or w_dout_vld = '1' then
-                r_preload_miso <= '0';
+              -- TODO LORIS: maybe should use din_rdy instead.
+              -- If so, use it also for WRITE and READ.
+              if w_spi_dout_vld = '1' then
                 -- TODO LORIS: use real data
-                r_tx_data <= std_logic_vector(to_unsigned(74, 8));
-                r_tx_valid <= '1';
+                r_spi_din <= std_logic_vector(to_unsigned(74, 8));
+                r_spi_din_vld <= '1';
               else
-                r_tx_valid <= '0';
+                r_spi_din_vld <= '0';
               end if;
             end if;
 
           when WRITE =>
             if i_spi_cs_n = '1' then
               r_state <= IDLE; -- Return to IDLE if transaction ends
-              r_tx_valid <= '0';
-              r_fifo_wr_en <= '0';
             else
-              if r_preload_miso = '1' or w_dout_vld = '1' then
-                r_preload_miso <= '0';
+              if w_spi_dout_vld = '1' then
+                -- TODO LORIS: almost-full or full instead
                 if w_fifo_full = '1' then
-                  r_tx_data <= FULL_BYTE;
-                  r_tx_valid <= '1';
+                  r_spi_din <= FIFO_FULL;
+                  r_spi_din_vld <= '1';
                 else
-                  r_fifo_data_in <= w_dout;
+                  r_spi_din <= ACK;
+                  r_spi_din_vld <= '1';
+                  r_fifo_wr_data <= w_spi_dout;
                   r_fifo_wr_en <= '1';
                 end if;
               else
-                r_tx_valid <= '0';
+                r_spi_din_vld <= '0';
                 r_fifo_wr_en <= '0';
               end if;
             end if;
 
+          -- TODO LORIS: considering that we prefetch the READ data, one byte
+          -- is always lost if the master terminates the communication before
+          -- before all bytes are read.
           when READ =>
             if i_spi_cs_n = '1' then
               r_state <= IDLE; -- Return to IDLE if transaction ends
-              r_tx_valid <= '0';
-              r_fifo_rd_en <= '0';
             else
-              if r_preload_miso = '1' or w_dout_vld = '1' then
+              if w_spi_dout_vld = '1' then
                 if w_fifo_empty = '1' then
-                  r_preload_miso <= '0';
-                  r_tx_data <= EMPTY_BYTE;
-                  r_tx_valid <= '1';
+                  r_spi_din <= FIFO_EMPTY;
+                  r_spi_din_vld <= '1';
                 else
-                  if w_fifo_rd_dv = '1' then
-                    r_preload_miso <= '0';
-                    r_fifo_rd_en <= '0'; -- Deassert read enable (read complete)
-                    r_tx_data <= w_fifo_data_out;
-                    r_tx_valid <= '1';
-                  else
-                    -- TODO LORIS: data is requested, but never comes to reading because,
-                    -- by the time the fifo is ready, w_dout_vld is back to '0'
-                    r_fifo_rd_en <= '1'; -- Request next data from FIFO
-                  end if;
+                  r_spi_din <= w_fifo_rd_data;
+                  r_spi_din_vld <= '1';
+                  r_fifo_rd_en <= '1'; -- Prefetch next data
                 end if;
               else
-                r_tx_valid <= '0';
-                r_fifo_rd_en <= '0';
+                r_fifo_rd_en <= '0'; -- Deassert read enable (read complete)
+                r_spi_din_vld <= '0';
               end if;
             end if;
 
