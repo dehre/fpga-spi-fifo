@@ -1,11 +1,3 @@
--- PROJECT TOP.
--- This module receives data (bytes) from an SPI master and echoes it back
--- on the subsequent SPI transaction, functioning as an SPI loopback device.
--- 
--- It's recommended to reset the FPGA before starting the communication to
--- properly initialize its internal registers and ensure synchronization.
--- To reset the FPGA, assert both `i_spi_cs_n` and `i_rst` , then pulse `i_spi_clk`.
-
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -101,7 +93,7 @@ begin
               r_spi_din <= NACK;
               r_spi_din_vld <= '1';
           end case;
-        else
+        elsif w_spi_din_rdy = '1' then
           r_spi_din_vld <= '0';
           o_debug_b <= '0';
           o_debug_c <= '0';
