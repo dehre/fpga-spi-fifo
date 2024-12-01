@@ -17,19 +17,21 @@
 --              are doing something you shouldn't be doing (reading from an
 --              empty FIFO or writing to a full FIFO).
 --
---              No Flags = No Almost Full (AF)/Almost Empty (AE) Flags
---              There is a separate module that has programmable AF/AE flags.
+--              With Flags = Has Almost Full (AF)/Almost Empty (AE) Flags
+--              These are settable via Generics: g_AF_LEVEL and g_AE_LEVEL
+--              g_AF_LEVEL: Goes high when # words in FIFO is > this number.
+--              g_AE_LEVEL: Goes high when # words in FIFO is < this number.
 -------------------------------------------------------------------------------
  
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
- 
-entity module_fifo_regs_no_flags is
+entity module_fifo_regs_with_flags is
   generic (
     g_WIDTH : natural := 8;
-    g_DEPTH : integer := 32
-    );
+    g_DEPTH : integer := 32;
+    g_AF_LEVEL : integer := 28;
+    g_AE_LEVEL : integer := 4);
   port (
     i_rst_sync : in std_logic;
     i_clk      : in std_logic;
@@ -38,16 +40,17 @@ entity module_fifo_regs_no_flags is
     i_wr_en   : in  std_logic;
     i_wr_data : in  std_logic_vector(g_WIDTH-1 downto 0);
     o_full    : out std_logic;
+    o_af      : out std_logic;
  
     -- FIFO Read Interface
     i_rd_en   : in  std_logic;
     o_rd_data : out std_logic_vector(g_WIDTH-1 downto 0);
-    o_empty   : out std_logic
+    o_empty   : out std_logic;
+    o_ae      : out std_logic
     );
-end module_fifo_regs_no_flags;
+end module_fifo_regs_with_flags;
  
-architecture rtl of module_fifo_regs_no_flags is
- 
+architecture rtl of module_fifo_regs_with_flags is
   type t_FIFO_DATA is array (0 to g_DEPTH-1) of std_logic_vector(g_WIDTH-1 downto 0);
   signal r_FIFO_DATA : t_FIFO_DATA := (others => (others => '0'));
  
@@ -110,6 +113,8 @@ begin
   w_FULL  <= '1' when r_FIFO_COUNT = g_DEPTH else '0';
   w_EMPTY <= '1' when r_FIFO_COUNT = 0       else '0';
  
+  o_af <= '1' when r_FIFO_COUNT > g_AF_LEVEL else '0';
+  o_ae <= '1' when r_FIFO_COUNT < g_AE_LEVEL else '0';
   o_full  <= w_FULL;
   o_empty <= w_EMPTY;
    
