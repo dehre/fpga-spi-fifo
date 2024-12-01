@@ -58,10 +58,6 @@ architecture RTL of SPIFIFO is
 -- or maybe just expose the count register in the FIFO.
 -- signal r_fifo_count : natural range 0 to 99;
 
-  -- Internal states for managing SPI commands
-  type StateType is (IDLE, STATUS, WRITE, READ);
-  signal r_state : StateType;
-
 begin
 
   process(i_clk_dbl)
@@ -72,20 +68,20 @@ begin
   end process;
 
   -- Instantiate SPI Slave
-  SPISlaveInstance : entity work.SPISlave
+  SPISlaveInstance : entity work.SPI_SLAVE
     generic map (WORD_SIZE => WORD_SIZE)
     port map (
-      i_clk      => i_clk,
-      i_rst      => i_rst,
-      i_spi_clk  => i_spi_clk,
-      i_spi_cs_n => i_spi_cs_n,
-      i_spi_mosi => i_spi_mosi,
-      o_spi_miso => o_spi_miso,
-      i_din      => r_spi_din,          -- Data to send to SPI master
-      i_din_vld  => r_spi_din_vld,      -- Valid signal for transmitted data
-      o_din_rdy  => w_spi_din_rdy,      -- Ready signal for new transmit data
-      o_dout     => w_spi_dout,         -- Data received from SPI master
-      o_dout_vld => w_spi_dout_vld      -- Valid signal for received data
+      CLK      => i_clk,
+      RST      => i_rst,
+      SCLK  => i_spi_clk,
+      CS_N => i_spi_cs_n,
+      MOSI => i_spi_mosi,
+      MISO => o_spi_miso,
+      DIN      => r_spi_din,          -- Data to send to SPI master
+      DIN_VLD  => r_spi_din_vld,      -- Valid signal for transmitted data
+      DIN_RDY  => w_spi_din_rdy,      -- Ready signal for new transmit data
+      DOUT     => w_spi_dout,         -- Data received from SPI master
+      DOUT_VLD => w_spi_dout_vld      -- Valid signal for received data
     );
 
   -- Main process to control SPI commands
@@ -94,7 +90,6 @@ begin
     if rising_edge(i_clk) then
       if i_rst = '1' then
         -- Reset state
-        r_state <= IDLE;
         r_spi_din <= (others => '0');
         r_spi_din_vld <= '0';
         o_debug_a <= '0';
@@ -102,33 +97,25 @@ begin
         o_debug_c <= '0';
 
       else
-        case r_state is
+        if w_spi_din_rdy = '1' and w_spi_dout_vld = '1' then
+          case w_spi_dout is
+            when CMD_STATUS =>
+              o_debug_b <= '1';
+              r_spi_din <= ACK;
+              r_spi_din_vld <= '1';
 
-          when IDLE =>
-            if w_spi_din_rdy = '1' and w_spi_dout_vld = '1' then
-              case w_spi_dout is
-                when CMD_STATUS =>
-                  o_debug_b <= '1';
-                  r_spi_din <= ACK;
-                  r_spi_din_vld <= '1';
+            when others =>
+              o_debug_c <= '1';
+              r_spi_din <= NACK;
+              r_spi_din_vld <= '1';
 
-                when others =>
-                  o_debug_c <= '1';
-                  r_spi_din <= NACK;
-                  r_spi_din_vld <= '1';
+          end case;
+        else
+          r_spi_din_vld <= '0';
+          o_debug_b <= '0';
+          o_debug_c <= '0';
+        end if;
 
-              end case;
-
-            else
-              r_spi_din_vld <= '0';
-              o_debug_b <= '0';
-              o_debug_c <= '0';
-            end if;
-
-          when others =>
-            o_debug_a <= '1';
-
-        end case;
       end if;
     end if;
   end process;
