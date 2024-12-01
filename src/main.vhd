@@ -20,7 +20,7 @@ entity SPIFIFO is
 
     -- Control/Data Signals
     i_rst      : in  std_logic;     -- FPGA Reset
-    i_clk      : in  std_logic;     -- FPGA Clock
+    i_clk_dbl      : in  std_logic;     -- FPGA Clock
 
     -- SPI Interface
     i_spi_clk  : in  std_logic;     -- SPI Clock
@@ -44,20 +44,15 @@ architecture RTL of SPIFIFO is
   constant FIFO_EMPTY  : std_logic_vector(7 downto 0) := x"FE";
   constant FIFO_FULL   : std_logic_vector(7 downto 0) := x"FF";
 
+  -- Halve the clock for debugging
+  signal i_clk : std_logic;
+
   -- Signals for SPI Slave
   signal r_spi_din      : std_logic_vector(7 downto 0); -- Data to send via SPI
   signal r_spi_din_vld  : std_logic;
   signal w_spi_din_rdy  : std_logic;
   signal w_spi_dout     : std_logic_vector(WORD_SIZE-1 downto 0);
   signal w_spi_dout_vld : std_logic;
-
-  -- Signals for FIFO
-  signal r_fifo_wr_en   : std_logic;
-  signal r_fifo_rd_en   : std_logic;
-  signal r_fifo_wr_data : std_logic_vector(7 downto 0);
-  signal w_fifo_rd_data : std_logic_vector(7 downto 0);
-  signal w_fifo_full    : std_logic;
-  signal w_fifo_empty   : std_logic;
 
 -- TODO LORIS: keep track of number of items in fifo,
 -- or maybe just expose the count register in the FIFO.
@@ -69,10 +64,12 @@ architecture RTL of SPIFIFO is
 
 begin
 
-  -- Avoid picking up noise
-  o_debug_a <= '0';
-  o_debug_b <= '0';
-  o_debug_c <= '0';
+  process(i_clk_dbl)
+  begin
+    if rising_edge(i_clk_dbl) then
+      i_clk <= not i_clk;
+    end if;
+  end process;
 
   -- Instantiate SPI Slave
   SPISlaveInstance : entity work.SPISlave
@@ -91,18 +88,6 @@ begin
       o_dout_vld => w_spi_dout_vld      -- Valid signal for received data
     );
 
-  FIFOInstance : entity work.module_fifo_regs_no_flags
-    generic map(g_WIDTH => WORD_SIZE, g_DEPTH => 100)
-    port map (
-      i_rst_sync => i_rst,
-      i_clk      => i_clk,
-      i_wr_data  => r_fifo_wr_data,
-      i_wr_en    => r_fifo_wr_en,
-      o_rd_data  => w_fifo_rd_data,
-      i_rd_en    => r_fifo_rd_en,
-      o_full     => w_fifo_full,
-      o_empty    => w_fifo_empty);
-
   -- Main process to control SPI commands
   process (i_clk)
   begin
@@ -112,119 +97,36 @@ begin
         r_state <= IDLE;
         r_spi_din <= (others => '0');
         r_spi_din_vld <= '0';
-        r_fifo_wr_data <= (others => '0');
-        r_fifo_wr_en <= '0';
-        r_fifo_rd_en <= '0';
+        o_debug_a <= '0';
+        o_debug_b <= '0';
+        o_debug_c <= '0';
 
       else
         case r_state is
 
           when IDLE =>
-            if w_spi_din_rdy = '1' then
+            if w_spi_din_rdy = '1' and w_spi_dout_vld = '1' then
               case w_spi_dout is
                 when CMD_STATUS =>
-                  r_state <= STATUS;
-                  -- TODO LORIS: abstract to function
-                  if w_fifo_full = '1' then
-                    r_spi_din <= FIFO_FULL;
-                    r_spi_din_vld <= '1';
-                  elsif w_fifo_empty = '1' then
-                    r_spi_din <= FIFO_EMPTY;
-                    r_spi_din_vld <= '1';
-                  else
-                    r_spi_din <= ACK;
-                    r_spi_din_vld <= '1';
-                  end if;
-                when CMD_WRITE =>
-                  r_state <= WRITE;
-                  -- TODO LORIS: abstract to function
-                  if w_fifo_full = '1' then
-                    r_spi_din <= FIFO_FULL;
-                    r_spi_din_vld <= '1';
-                  elsif w_fifo_empty = '1' then
-                    r_spi_din <= FIFO_EMPTY;
-                    r_spi_din_vld <= '1';
-                  else
-                    r_spi_din <= ACK;
-                    r_spi_din_vld <= '1';
-                  end if;
-                when CMD_READ =>
-                  r_state <= READ;
-                  r_fifo_rd_en <= '1'; -- Prefetch next data
-                  -- TODO LORIS: abstract to function
-                  if w_fifo_full = '1' then
-                    r_spi_din <= FIFO_FULL;
-                    r_spi_din_vld <= '1';
-                  elsif w_fifo_empty = '1' then
-                    r_spi_din <= FIFO_EMPTY;
-                    r_spi_din_vld <= '1';
-                  else
-                    r_spi_din <= ACK;
-                    r_spi_din_vld <= '1';
-                  end if;
-                when others =>
-                  r_state <= IDLE; -- Unknown command, remain to IDLE
-                  r_spi_din <= NACK;
-                  r_spi_din_vld <= '1';
-              end case;
-            else
-              r_spi_din_vld <= '0';
-            end if;
-
-          when STATUS =>
-            if i_spi_cs_n = '1' then
-              r_state <= IDLE;
-            else
-              if w_spi_din_rdy = '1' then
-                -- TODO LORIS: use real data
-                r_spi_din <= std_logic_vector(to_unsigned(74, 8));
-                r_spi_din_vld <= '1';
-              else
-                r_spi_din_vld <= '0';
-              end if;
-            end if;
-
-          when WRITE =>
-            if i_spi_cs_n = '1' then
-              r_state <= IDLE;
-            else
-              if w_spi_din_rdy = '1' then
-                if w_fifo_full = '1' then
-                  r_spi_din <= NACK;
-                  r_spi_din_vld <= '1';
-                else
-                  -- TODO LORIS: if FULL-1, send FULL
+                  o_debug_b <= '1';
                   r_spi_din <= ACK;
                   r_spi_din_vld <= '1';
-                  r_fifo_wr_data <= w_spi_dout;
-                  r_fifo_wr_en <= '1';
-                end if;
-              else
-                r_spi_din_vld <= '0';
-                r_fifo_wr_en <= '0';
-              end if;
+
+                when others =>
+                  o_debug_c <= '1';
+                  r_spi_din <= NACK;
+                  r_spi_din_vld <= '1';
+
+              end case;
+
+            else
+              r_spi_din_vld <= '0';
+              o_debug_b <= '0';
+              o_debug_c <= '0';
             end if;
 
-          when READ =>
-            if i_spi_cs_n = '1' then
-              r_state <= IDLE;
-              -- TODO LORIS: if fifo not empty, bump read_idx back, so that
-              -- no byte is lost due to prefetch.
-            else
-              if w_spi_din_rdy = '1' then
-                if w_fifo_empty = '1' then
-                  r_spi_din <= FIFO_EMPTY;
-                  r_spi_din_vld <= '1';
-                else
-                  r_spi_din <= w_fifo_rd_data;
-                  r_spi_din_vld <= '1';
-                  r_fifo_rd_en <= '1'; -- Prefetch next data
-                end if;
-              else
-                r_fifo_rd_en <= '0';
-                r_spi_din_vld <= '0';
-              end if;
-            end if;
+          when others =>
+            o_debug_a <= '1';
 
         end case;
       end if;
