@@ -197,15 +197,21 @@ begin
               r_state <= IDLE;
             else
               if w_spi_din_rdy = '1' and w_spi_dout_vld = '1' then
+                -- TODO LORIS: it sends FULL twice, then NACK
                 if w_fifo_full = '1' then
                   r_spi_din <= NACK;
                   r_spi_din_vld <= '1';
                 else
-                  -- TODO LORIS: if FULL-1, send FULL
-                  r_spi_din <= ACK;
-                  r_spi_din_vld <= '1';
                   r_fifo_wr_data <= w_spi_dout;
                   r_fifo_wr_en <= '1';
+                  if w_fifo_almost_full = '1' then
+                    -- there was space only for this last item
+                    r_spi_din <= FIFO_FULL;
+                    r_spi_din_vld <= '1';
+                  else
+                    r_spi_din <= ACK;
+                    r_spi_din_vld <= '1';
+                  end if;
                 end if;
               else
                 r_spi_din_vld <= '0';
