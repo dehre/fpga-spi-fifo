@@ -40,52 +40,51 @@ entity FIFO is
   port (
     i_rst_sync : in std_logic;
     i_clk      : in std_logic;
- 
+
     -- FIFO Write Interface
-    i_wr_en   : in  std_logic;
-    i_wr_data : in  std_logic_vector(WIDTH-1 downto 0);
-    o_full    : out std_logic;
-    o_af      : out std_logic;
- 
+    i_wr_en    : in  std_logic;
+    i_wr_data  : in  std_logic_vector(WIDTH-1 downto 0);
+    o_full     : out std_logic;
+    o_af       : out std_logic;
+
     -- FIFO Read Interface
-    i_rd_en   : in  std_logic;
-    o_rd_data : out std_logic_vector(WIDTH-1 downto 0);
-    o_empty   : out std_logic;
-    o_ae      : out std_logic
-    );
+    i_rd_en    : in  std_logic;
+    o_rd_data  : out std_logic_vector(WIDTH-1 downto 0);
+    o_empty    : out std_logic;
+    o_ae       : out std_logic);
 end FIFO;
- 
+
 architecture RTL of FIFO is
 
   type FIFODataType is array (0 to DEPTH-1) of std_logic_vector(WIDTH-1 downto 0);
-  signal r_fifo_data : FIFODataType;
- 
+
+  signal r_fifo_data  : FIFODataType;
   signal r_wr_index   : integer range 0 to DEPTH-1;
   signal r_rd_index   : integer range 0 to DEPTH-1;
   signal r_fifo_count : integer range 0 to DEPTH;
- 
-  signal w_full  : std_logic;
-  signal w_empty : std_logic;
-   
+
+  signal w_full       : std_logic;
+  signal w_empty      : std_logic;
+
 begin
- 
+
   process (i_clk) is
   begin
     if rising_edge(i_clk) then
       if i_rst_sync = '1' then
-        r_fifo_data <= (others => (x"CC"));
+        r_fifo_data  <= (others => (x"CC"));
         r_fifo_count <= 0;
         r_wr_index   <= DEPTH-1;
         r_rd_index   <= 0;
       else
- 
+
         -- Keeps track of the total number of words in the FIFO
         if (i_wr_en = '1' and i_rd_en = '0' and w_full = '0') then
           r_fifo_count <= r_fifo_count + 1;
         elsif (i_rd_en = '1' and i_wr_en = '0' and w_empty = '0') then
           r_fifo_count <= r_fifo_count - 1;
         end if;
- 
+
         -- Keeps track of the write index (and controls roll-over)
         if (i_wr_en = '1' and w_full = '0') then
           if r_wr_index = DEPTH-1 then
@@ -94,7 +93,7 @@ begin
             r_wr_index <= r_wr_index + 1;
           end if;
         end if;
- 
+
         -- Keeps track of the read index (and controls roll-over)        
         if (i_rd_en = '1' and w_empty = '0') then
           if r_rd_index = DEPTH-1 then
@@ -103,23 +102,23 @@ begin
             r_rd_index <= r_rd_index + 1;
           end if;
         end if;
- 
+
         -- Registers the input data when there is a write
         if i_wr_en = '1' then
           r_fifo_data(r_wr_index) <= i_wr_data;
         end if;
          
-      end if;                           -- sync reset
-    end if;                             -- rising_edge(i_clk)
+      end if;
+    end if;
   end process;
-   
+
   o_rd_data <= r_fifo_data(r_rd_index);
- 
-  w_full  <= '1' when r_fifo_count = DEPTH else '0';
-  w_empty <= '1' when r_fifo_count = 0       else '0';
- 
-  o_af <= '1' when r_fifo_count >= DEPTH-1 else '0';
-  o_ae <= '1' when r_fifo_count <= 1 else '0';
+
+  -- TODO LORIS: rename o_almost_full
+  w_full  <= '1' when r_fifo_count = DEPTH    else '0';
+  w_empty <= '1' when r_fifo_count = 0        else '0';
+  o_af    <= '1' when r_fifo_count >= DEPTH-1 else '0';
+  o_ae    <= '1' when r_fifo_count <= 1       else '0';
 
   o_full  <= w_full;
   o_empty <= w_empty;
