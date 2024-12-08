@@ -69,6 +69,21 @@ architecture RTL of SPIFIFO is
   type StateType is (IDLE, STATUS, WRITE, READ);
   signal r_state : StateType;
 
+  -- Abstract logic for responding to a command
+  function f_accept_cmd (
+    w_fifo_full  : std_logic;
+    w_fifo_empty : std_logic)
+  return std_logic_vector is
+  begin
+    if w_fifo_full = '1' then
+      return FIFO_FULL;
+    elsif w_fifo_empty = '1' then
+      return FIFO_EMPTY;
+    else
+      return ACK;
+    end if;
+  end function;
+
 begin
 
   -- Avoid picking up noise
@@ -132,44 +147,17 @@ begin
               case w_spi_dout is
                 when CMD_STATUS =>
                   r_state <= STATUS;
-                  -- TODO LORIS: abstract to function
-                  if w_fifo_full = '1' then
-                    r_spi_din <= FIFO_FULL;
-                    r_spi_din_vld <= '1';
-                  elsif w_fifo_empty = '1' then
-                    r_spi_din <= FIFO_EMPTY;
-                    r_spi_din_vld <= '1';
-                  else
-                    r_spi_din <= ACK;
-                    r_spi_din_vld <= '1';
-                  end if;
+                  r_spi_din <= f_accept_cmd(w_fifo_full, w_fifo_empty);
+                  r_spi_din_vld <= '1';
                 when CMD_WRITE =>
                   r_state <= WRITE;
-                  -- TODO LORIS: abstract to function
-                  if w_fifo_full = '1' then
-                    r_spi_din <= FIFO_FULL;
-                    r_spi_din_vld <= '1';
-                  elsif w_fifo_empty = '1' then
-                    r_spi_din <= FIFO_EMPTY;
-                    r_spi_din_vld <= '1';
-                  else
-                    r_spi_din <= ACK;
-                    r_spi_din_vld <= '1';
-                  end if;
+                  r_spi_din <= f_accept_cmd(w_fifo_full, w_fifo_empty);
+                  r_spi_din_vld <= '1';
                 when CMD_READ =>
                   r_state <= READ;
                   r_fifo_rd_en <= '1'; -- Prefetch next data
-                  -- TODO LORIS: abstract to function
-                  if w_fifo_full = '1' then
-                    r_spi_din <= FIFO_FULL;
-                    r_spi_din_vld <= '1';
-                  elsif w_fifo_empty = '1' then
-                    r_spi_din <= FIFO_EMPTY;
-                    r_spi_din_vld <= '1';
-                  else
-                    r_spi_din <= ACK;
-                    r_spi_din_vld <= '1';
-                  end if;
+                  r_spi_din <= f_accept_cmd(w_fifo_full, w_fifo_empty);
+                  r_spi_din_vld <= '1';
                 when others =>
                   r_state <= IDLE; -- Unknown command, remain to IDLE
                   r_spi_din <= NACK;
