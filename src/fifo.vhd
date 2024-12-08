@@ -25,8 +25,8 @@
 -- Changes:
 -- * better constraint `r_fifo_count` values
 -- * remove generics for AE_LEVEL and AF_LEVEL, setting flags just one item before full/empty.
+-- * updated initial value for `r_wr_index` on reset
 -- * export fifo_count
--- * allow undoing a read by bumping index back
 -- * formatting and naming convention
 
 library ieee;
@@ -58,11 +58,11 @@ end FIFO;
 architecture RTL of FIFO is
 
   type FIFODataType is array (0 to DEPTH-1) of std_logic_vector(WIDTH-1 downto 0);
-  signal r_fifo_data : FIFODataType := (others => (others => '0'));
+  signal r_fifo_data : FIFODataType;
  
-  signal r_wr_index   : integer range 0 to DEPTH-1 := 0;
-  signal r_rd_index   : integer range 0 to DEPTH-1 := 0;
-  signal r_fifo_count : integer range 0 to DEPTH   := 0;
+  signal r_wr_index   : integer range 0 to DEPTH-1;
+  signal r_rd_index   : integer range 0 to DEPTH-1;
+  signal r_fifo_count : integer range 0 to DEPTH;
  
   signal w_full  : std_logic;
   signal w_empty : std_logic;
@@ -73,8 +73,9 @@ begin
   begin
     if rising_edge(i_clk) then
       if i_rst_sync = '1' then
+        r_fifo_data <= (others => (x"CC"));
         r_fifo_count <= 0;
-        r_wr_index   <= 0;
+        r_wr_index   <= DEPTH-1;
         r_rd_index   <= 0;
       else
  
