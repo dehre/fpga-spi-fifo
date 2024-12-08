@@ -108,12 +108,12 @@ begin
       o_dout_vld => w_spi_dout_vld      -- Valid signal for received data
     );
 
-  FIFOInstance : entity work.module_fifo_regs_with_flags
+  FIFOInstance : entity work.FIFO
     generic map(
-      g_WIDTH => WORD_SIZE,
-      g_DEPTH => 100,
-      g_AF_LEVEL => 97,
-      g_AE_LEVEL => 2)
+      WIDTH => WORD_SIZE,
+      DEPTH => 100,
+      AF_LEVEL => 97,
+      AE_LEVEL => 2)
     port map (
       i_rst_sync => i_rst,
       i_clk      => i_clk,
