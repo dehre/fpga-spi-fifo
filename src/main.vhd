@@ -5,6 +5,7 @@
 -- It's recommended to reset the FPGA before starting the communication to
 -- properly initialize its internal registers and ensure synchronization.
 -- To reset the FPGA, assert both `i_spi_cs_n` and `i_rst` , then pulse `i_spi_clk`.
+-- TODO LORIS: do you really need to assert `i_spi_cs_n` too?
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -32,6 +33,7 @@ end entity;
 architecture RTL of SPIFIFO is
 
   constant WORD_SIZE   : integer := 8;
+  constant FIFO_DEPTH  : integer := 99;
 
   -- Constants for SPI commands - Inputs
   constant CMD_STATUS : std_logic_vector(7 downto 0) := x"FA";
@@ -111,9 +113,7 @@ begin
   FIFOInstance : entity work.FIFO
     generic map(
       WIDTH => WORD_SIZE,
-      DEPTH => 100,
-      AF_LEVEL => 97,
-      AE_LEVEL => 2)
+      DEPTH => FIFO_DEPTH)
     port map (
       i_rst_sync => i_rst,
       i_clk      => i_clk,

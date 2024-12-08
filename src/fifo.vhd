@@ -18,9 +18,8 @@
 --              empty FIFO or writing to a full FIFO).
 --
 --              With Flags = Has Almost Full (AF)/Almost Empty (AE) Flags
---              These are settable via Generics: AF_LEVEL and AE_LEVEL
---              AF_LEVEL: Goes high when # words in FIFO is > this number.
---              AE_LEVEL: Goes high when # words in FIFO is < this number.
+--              AF_LEVEL: Goes high when # words in FIFO is >= DEPTH-1.
+--              AE_LEVEL: Goes high when # words in FIFO is <= 1.
 -------------------------------------------------------------------------------
 -- TODO LORIS
 -- Changes:
@@ -37,9 +36,7 @@ use ieee.numeric_std.all;
 entity FIFO is
   generic (
     WIDTH : natural := 8;
-    DEPTH : integer := 32;
-    AF_LEVEL : integer := 28;
-    AE_LEVEL : integer := 4);
+    DEPTH : integer := 32);
   port (
     i_rst_sync : in std_logic;
     i_clk      : in std_logic;
@@ -120,8 +117,9 @@ begin
   w_full  <= '1' when r_fifo_count = DEPTH else '0';
   w_empty <= '1' when r_fifo_count = 0       else '0';
  
-  o_af <= '1' when r_fifo_count > AF_LEVEL else '0';
-  o_ae <= '1' when r_fifo_count < AE_LEVEL else '0';
+  o_af <= '1' when r_fifo_count >= DEPTH-1 else '0';
+  o_ae <= '1' when r_fifo_count <= 1 else '0';
+
   o_full  <= w_full;
   o_empty <= w_empty;
 
