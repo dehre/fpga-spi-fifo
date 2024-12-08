@@ -35,7 +35,7 @@ end entity;
 architecture RTL of SPIFIFO is
 
   constant WORD_SIZE   : integer := 8;
-  constant FIFO_DEPTH  : integer := 99;
+  constant FIFO_DEPTH  : integer := 100;
 
   -- Constants for SPI commands - Inputs
   constant CMD_STATUS : std_logic_vector(7 downto 0) := x"FA";
@@ -157,7 +157,6 @@ begin
                   r_spi_din_vld <= '1';
                 when CMD_READ =>
                   r_state <= READ;
-                  r_fifo_rd_en <= '1'; -- Prefetch next data
                   r_spi_din <= f_accept_cmd(w_fifo_full, w_fifo_empty);
                   r_spi_din_vld <= '1';
                 when others =>
@@ -187,16 +186,14 @@ begin
               r_state <= IDLE;
             else
               if w_spi_din_rdy = '1' and w_spi_dout_vld = '1' then
-                -- TODO LORIS: it sends FULL twice, then NACK
                 if w_fifo_full = '1' then
                   r_spi_din <= NACK;
                   r_spi_din_vld <= '1';
                 else
-                  r_fifo_wr_data <= w_spi_dout;
                   r_fifo_wr_en <= '1';
+                  r_fifo_wr_data <= w_spi_dout;
                   if w_fifo_almost_full = '1' then
-                    -- there was space only for this last item
-                    r_spi_din <= FIFO_FULL;
+                    r_spi_din <= FIFO_FULL; -- no space for next byte
                     r_spi_din_vld <= '1';
                   else
                     r_spi_din <= ACK;
@@ -204,16 +201,14 @@ begin
                   end if;
                 end if;
               else
-                r_spi_din_vld <= '0';
                 r_fifo_wr_en <= '0';
+                r_spi_din_vld <= '0';
               end if;
             end if;
 
           when READ =>
             if i_spi_cs_n = '1' then
               r_state <= IDLE;
-              -- TODO LORIS: if fifo not empty, bump read_idx back, so that
-              -- no byte is lost due to prefetch.
             else
               if w_spi_din_rdy = '1' and w_spi_dout_vld = '1' then
                 if w_fifo_empty = '1' then
@@ -222,7 +217,7 @@ begin
                 else
                   r_spi_din <= w_fifo_rd_data;
                   r_spi_din_vld <= '1';
-                  r_fifo_rd_en <= '1'; -- Prefetch next data
+                  r_fifo_rd_en <= '1'; -- Bump idx for next read
                 end if;
               else
                 r_fifo_rd_en <= '0';
