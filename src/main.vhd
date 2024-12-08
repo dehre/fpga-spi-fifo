@@ -6,6 +6,8 @@
 -- properly initialize its internal registers and ensure synchronization.
 -- To reset the FPGA, assert both `i_spi_cs_n` and `i_rst` , then pulse `i_spi_clk`.
 -- TODO LORIS: do you really need to assert `i_spi_cs_n` too?
+-- TODO LORIS: eventually force reset on restart by adding a throwaway register in main,
+--             then remove any initialization in the declarations.
 
 library ieee;
 use ieee.std_logic_1164.all;
