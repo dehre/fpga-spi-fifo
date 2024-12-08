@@ -22,7 +22,14 @@
 --              AF_LEVEL: Goes high when # words in FIFO is > this number.
 --              AE_LEVEL: Goes high when # words in FIFO is < this number.
 -------------------------------------------------------------------------------
- 
+-- TODO LORIS
+-- Changes:
+-- * better constraint `r_fifo_count` values
+-- * remove generics for AE_LEVEL and AF_LEVEL, setting flags just one item before full/empty.
+-- * export fifo_count
+-- * allow undoing a read by bumping index back
+-- * formatting and naming convention
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -58,9 +65,7 @@ architecture RTL of FIFO is
  
   signal r_wr_index   : integer range 0 to DEPTH-1 := 0;
   signal r_rd_index   : integer range 0 to DEPTH-1 := 0;
- 
-  -- # Words in FIFO, has extra range to allow for assert conditions
-  signal r_fifo_count : integer range -1 to DEPTH+1 := 0;
+  signal r_fifo_count : integer range 0 to DEPTH   := 0;
  
   signal w_full  : std_logic;
   signal w_empty : std_logic;
@@ -77,9 +82,9 @@ begin
       else
  
         -- Keeps track of the total number of words in the FIFO
-        if (i_wr_en = '1' and i_rd_en = '0') then
+        if (i_wr_en = '1' and i_rd_en = '0' and w_full = '0') then
           r_fifo_count <= r_fifo_count + 1;
-        elsif (i_wr_en = '0' and i_rd_en = '1') then
+        elsif (i_rd_en = '1' and i_wr_en = '0' and w_empty = '0') then
           r_fifo_count <= r_fifo_count - 1;
         end if;
  
@@ -119,22 +124,5 @@ begin
   o_ae <= '1' when r_fifo_count < AE_LEVEL else '0';
   o_full  <= w_full;
   o_empty <= w_empty;
-   
-  -- ASSERTION LOGIC - Not synthesized
-  -- synthesis translate_off
- 
-  process (i_clk) is
-  begin
-    if rising_edge(i_clk) then
-      if i_wr_en = '1' and w_full = '1' then
-        report "ASSERT FAILURE - MODULE_REGISTER_FIFO: FIFO IS FULL AND BEING WRITTEN " severity failure;
-      end if;
- 
-      if i_rd_en = '1' and w_empty = '1' then
-        report "ASSERT FAILURE - MODULE_REGISTER_FIFO: FIFO IS EMPTY AND BEING READ " severity failure;
-      end if;
-    end if;
-  end process;
- 
-  -- synthesis translate_on
+
 end architecture;
