@@ -38,11 +38,13 @@ architecture RTL of SPIFIFO is
   constant FIFO_DEPTH  : integer := 5;
 
   -- Constants for SPI commands - Inputs
+  -- TODO LORIS: create type
   constant CMD_STATUS : std_logic_vector(7 downto 0) := x"FA";
   constant CMD_READ   : std_logic_vector(7 downto 0) := x"FB";
   constant CMD_WRITE  : std_logic_vector(7 downto 0) := x"FC";
 
   -- Constants for SPI commands - Outputs
+  -- TODO LORIS: create type
   constant ACK         : std_logic_vector(7 downto 0) := x"AA";
   constant NACK        : std_logic_vector(7 downto 0) := x"BB";
   constant FIFO_EMPTY  : std_logic_vector(7 downto 0) := x"FE";
@@ -74,12 +76,14 @@ architecture RTL of SPIFIFO is
 -- or maybe just expose the count register in the FIFO.
 -- signal r_fifo_count : natural range 0 to 99;
 
+  signal r_cmd : std_logic_vector(7 downto 0);
+
   -- Internal states for managing SPI commands
   type StateType is (IDLE, STATUS, WRITE, READ);
   signal r_state : StateType;
-  signal r_pre_state : StateType; -- pre-state for IDLE (so that it takes two clock cycles to answer)
 
   -- Abstract logic for responding to a command
+  -- TODO LORIS: rename
   function f_accept_cmd (
     w_fifo_full  : std_logic;
     w_fifo_empty : std_logic)
@@ -149,8 +153,8 @@ begin
     if rising_edge(i_clk) then
       if i_rst = '1' then
         -- Reset state
+        r_cmd <= (others => '0');
         r_state <= IDLE;
-        r_pre_state <= IDLE;
         r_spi_din <= (others => '0');
         r_spi_din_vld <= '0';
         r_fifo_wr_data <= (others => '0');
@@ -164,27 +168,28 @@ begin
         case r_state is
 
           when IDLE =>
-            r_fifo_rd_undo <= '0';
-            -- TODO LORIS: maybe no need wait for w_spi_dout_vld and w_spi_din_rdy separately
+            r_fifo_rd_undo <= '0'; -- TODO LORIS: move somewhere else
             if w_spi_dout_vld = '1' then
-              case w_spi_dout is
-                when CMD_STATUS =>
-                  r_pre_state <= STATUS;
-                when CMD_WRITE =>
-                  r_pre_state <= WRITE;
-                when CMD_READ =>
-                  r_pre_state <= READ;
-                when others =>
-                  r_pre_state <= IDLE; -- Unknown command, remain to IDLE
-              end case;
+              r_cmd <= w_spi_dout;
             elsif w_spi_din_rdy = '1' then
-              r_state <= r_pre_state;
-              r_spi_din_vld <= '1';
-                  if r_pre_state = IDLE then
-                    r_spi_din <= NACK;
-                  else
-                    r_spi_din <= f_accept_cmd(w_fifo_full, w_fifo_empty);
-                  end if;
+              case r_cmd is
+                when CMD_STATUS =>
+                  r_state <= STATUS;
+                  r_spi_din <= f_accept_cmd(w_fifo_full, w_fifo_empty);
+                  r_spi_din_vld <= '1';
+                when CMD_WRITE =>
+                  r_state <= WRITE;
+                  r_spi_din <= f_accept_cmd(w_fifo_full, w_fifo_empty);
+                  r_spi_din_vld <= '1';
+                when CMD_READ =>
+                  r_state <= READ;
+                  r_spi_din <= f_accept_cmd(w_fifo_full, w_fifo_empty);
+                  r_spi_din_vld <= '1';
+                when others =>
+                  r_state <= IDLE; -- Unknown command, remain to IDLE
+                  r_spi_din <= NACK;
+                  r_spi_din_vld <= '1';
+              end case;
             else
               r_spi_din_vld <= '0';
             end if;
