@@ -39,6 +39,7 @@ architecture RTL of SPIFIFO is
 
   -- Constants for SPI commands - Inputs
   -- TODO LORIS: create type
+  -- TODO LORIS: rename CMD_STATUS to CMD_COUNT
   constant CMD_STATUS : std_logic_vector(7 downto 0) := x"FA";
   constant CMD_READ   : std_logic_vector(7 downto 0) := x"FB";
   constant CMD_WRITE  : std_logic_vector(7 downto 0) := x"FC";
@@ -79,12 +80,12 @@ architecture RTL of SPIFIFO is
   signal r_cmd : std_logic_vector(7 downto 0);
 
   -- Internal states for managing SPI commands
+  -- TODO LORIS: rename STATUS to COUNT
   type StateType is (IDLE, STATUS, WRITE, READ);
   signal r_state : StateType;
 
   -- Abstract logic for responding to a command
-  -- TODO LORIS: rename
-  function f_accept_cmd (
+  function f_acknowledge_cmd (
     w_fifo_full  : std_logic;
     w_fifo_empty : std_logic)
   return std_logic_vector is
@@ -175,15 +176,15 @@ begin
               case r_cmd is
                 when CMD_STATUS =>
                   r_state <= STATUS;
-                  r_spi_din <= f_accept_cmd(w_fifo_full, w_fifo_empty);
+                  r_spi_din <= f_acknowledge_cmd(w_fifo_full, w_fifo_empty);
                   r_spi_din_vld <= '1';
                 when CMD_WRITE =>
                   r_state <= WRITE;
-                  r_spi_din <= f_accept_cmd(w_fifo_full, w_fifo_empty);
+                  r_spi_din <= f_acknowledge_cmd(w_fifo_full, w_fifo_empty);
                   r_spi_din_vld <= '1';
                 when CMD_READ =>
                   r_state <= READ;
-                  r_spi_din <= f_accept_cmd(w_fifo_full, w_fifo_empty);
+                  r_spi_din <= f_acknowledge_cmd(w_fifo_full, w_fifo_empty);
                   r_spi_din_vld <= '1';
                 when others =>
                   r_state <= IDLE; -- Unknown command, remain to IDLE
@@ -198,10 +199,9 @@ begin
             if i_spi_cs_n = '1' then
               r_state <= IDLE;
             else
-              -- TODO LORIS: refactor like other commands
-              if w_spi_din_rdy = '1' and w_spi_dout_vld = '1' then
-                -- TODO LORIS: use real data and maybe delay response as in READ and WRITE
-                r_spi_din <= std_logic_vector(to_unsigned(74, 8));
+              if w_spi_din_rdy = '1' then
+                -- TODO LORIS: use real data
+                r_spi_din <= std_logic_vector(to_unsigned(74, r_spi_din'length));
                 r_spi_din_vld <= '1';
               else
                 r_spi_din_vld <= '0';
