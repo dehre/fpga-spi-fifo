@@ -37,9 +37,6 @@ architecture RTL of SPIFIFO is
   constant WORD_SIZE   : integer := 8;
   constant FIFO_DEPTH  : integer := 5;
 
-  -- Debugging Stuff
-  signal r_debug_counter : natural range 0 to 100;
-
   -- Constants for SPI commands - Inputs
   constant CMD_STATUS : std_logic_vector(7 downto 0) := x"FA";
   constant CMD_READ   : std_logic_vector(7 downto 0) := x"FB";
@@ -162,7 +159,6 @@ begin
         r_fifo_rd_en <= '0';
         r_fifo_rd_undo <= '0';
         r_ignore_first_written_byte <= '1';
-        r_debug_counter <= 10;
         r_fifo_read_prefetched <= '0';
 
       else
@@ -213,7 +209,6 @@ begin
               r_state <= IDLE;
               r_ignore_first_written_byte <= '1'; -- cleanup for next time
             elsif w_spi_dout_vld = '1' then
-              r_debug_counter <= r_debug_counter + 1;
               if r_ignore_first_written_byte = '0' and w_fifo_full = '0' then
                 r_fifo_wr_data <= w_spi_dout;
                 r_fifo_wr_en <= '1';
@@ -223,7 +218,6 @@ begin
               end if;
             elsif w_spi_din_rdy = '1' then
               r_fifo_wr_en <= '0';
-              -- r_spi_din <= std_logic_vector(to_unsigned(r_debug_counter, r_spi_din'length));
               if w_fifo_full = '1' then
                 r_spi_din <= NACK;
               elsif w_fifo_almost_full = '1' then
@@ -244,7 +238,6 @@ begin
                 r_fifo_rd_undo <= '1';
               end if;
             elsif w_spi_dout_vld = '1' then
-              r_debug_counter <= r_debug_counter - 1;
               if w_fifo_empty = '0' then
                 r_fifo_rd_en <= '1';
                 r_fifo_read_prefetched <= '1';
@@ -253,7 +246,6 @@ begin
               end if;
             elsif w_spi_din_rdy = '1' then
               r_fifo_rd_en <= '0';
-              -- r_spi_din <= std_logic_vector(to_unsigned(r_debug_counter, r_spi_din'length));
               -- r_spi_din <= w_fifo_rd_data when w_fifo_empty = '0' else FIFO_EMPTY;
               if r_fifo_read_prefetched = '0' then
                 r_spi_din <= FIFO_EMPTY;
