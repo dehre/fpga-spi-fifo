@@ -111,6 +111,7 @@ begin
         end if;
       end if;
 
+      -- TODO LORIS: simplify
       -- Keeps track of number of words in FIFO
       -- Read with no write
       if i_Rd_En = '1' and i_Wr_DV = '0' and i_Rd_Undo = '0' then
@@ -132,6 +133,8 @@ begin
     end if;
   end process;
 
+  -- TODO LORIS: if r_Count=0 or r_Count=1 and i_Rd_En=1
+  -- TODO LORIS: clean up parentheses
   o_Full <= '1' when ((r_Count=DEPTH) or (r_Count=DEPTH-1 and i_Wr_DV='1')) else '0';
   o_Empty <= '1' when (r_Count = 0) else '0';
   o_AF_Flag <= '1' when ((r_Count>=(DEPTH-i_AF_Level)) or (r_Count>=(DEPTH-1-i_AF_Level) and i_Wr_DV='1')) else '0';
