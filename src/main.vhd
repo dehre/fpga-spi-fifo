@@ -132,13 +132,12 @@ begin
       -- Write Side
       i_Wr_DV    => r_fifo_wr_en,
       i_Wr_Data  => r_fifo_wr_data,
-      i_AF_Level => 1,
+      i_AF_Level => 1, -- TODO LORIS: generics
       o_AF_Flag  => w_fifo_almost_full,
       o_Full     => w_fifo_full,
       -- Read Side
       i_Rd_En    => r_fifo_rd_en,
       i_Rd_Undo  => r_fifo_rd_undo,
-      o_Rd_DV    => open, -- TODO LORIS: not needed
       o_Rd_Data  => w_fifo_rd_data,
       i_AE_Level => 1,
       o_AE_Flag  => w_fifo_almost_empty,

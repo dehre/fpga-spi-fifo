@@ -36,7 +36,6 @@ entity FIFO is
     -- Read Side
     i_Rd_En    : in  std_logic;
     i_Rd_Undo  : in  std_logic;
-    o_Rd_DV    : out std_logic;
     o_Rd_Data  : out std_logic_vector(WIDTH-1 downto 0);
     i_AE_Level : in  integer;
     o_AE_Flag  : out std_logic;
@@ -50,9 +49,6 @@ architecture RTL of FIFO is
 
   signal r_Wr_Addr, r_Rd_Addr : natural range 0 to DEPTH-1;
   signal r_Count : natural range 0 to DEPTH;  -- 1 extra to go to DEPTH
- 
-  signal w_Rd_DV : std_logic;
-  signal w_Rd_Data : std_logic_vector(WIDTH-1 downto 0);
 
   signal w_Wr_Addr, w_Rd_Addr : std_logic_vector(DEPTH_BITS-1 downto 0);
 
@@ -77,8 +73,7 @@ begin
       i_Rd_Clk  => i_Clk,
       i_Rd_Addr => w_Rd_Addr,
       i_Rd_En   => i_Rd_En,
-      o_Rd_DV   => w_Rd_DV,
-      o_Rd_Data => w_Rd_Data);
+      o_Rd_Data => o_Rd_Data);
 
   -- Main process to control address and counters for FIFO
   process (i_Clk, i_Rst_L) is
@@ -134,10 +129,6 @@ begin
         end if;
       end if;
 
-      -- TODO LORIS: maybe put it out of the process
-      -- TODO LORIS: you might not need w_Rd_Data altogether, just o_Rd_Data
-      o_Rd_Data <= w_Rd_Data;
-
     end if;
   end process;
 
@@ -145,8 +136,6 @@ begin
   o_Empty <= '1' when (r_Count = 0) else '0';
   o_AF_Flag <= '1' when ((r_Count>=(DEPTH-i_AF_Level)) or (r_Count>=(DEPTH-1-i_AF_Level) and i_Wr_DV='1')) else '0';
   o_AE_Flag <= '1' when (r_Count <= i_AE_Level) else '0';
-
-  o_Rd_DV <= w_Rd_DV;
 
   ----------------------------------------------------------------------------
   -- ASSERTION CODE, NOT SYNTHESIZED

@@ -31,7 +31,6 @@ entity RAM_2Port is
     i_Rd_Clk  : in  std_logic;
     i_Rd_Addr : in  std_logic_vector; -- Gets sized at higher level
     i_Rd_En   : in  std_logic;
-    o_Rd_DV   : out std_logic;
     o_Rd_Data : out std_logic_vector(WIDTH-1 downto 0)
     );
 end RAM_2Port;
@@ -60,7 +59,6 @@ begin
     if rising_edge(i_Rd_Clk) then
       -- TODO LORIS: try adding if i_Rd_En = '1' then
       o_Rd_Data <= r_Mem(to_integer(unsigned(i_Rd_Addr)));
-      o_Rd_DV   <= i_Rd_En;
     end if;
   end process;
 
