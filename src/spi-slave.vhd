@@ -5,6 +5,19 @@
 -- Changes:
 -- * set MISO to high impedance state when inactive;
 -- * stretch o_din_rdy to two clock cycles to allow setting response in state machine
+-- Usage:
+-- ```
+-- if o_dout_vld = '1' then
+--   /* data available on o_dout */
+-- elsif o_din_rdy = '1' then
+--   /* set i_din to desired value */
+--   i_din <= x"55";
+--   i_din_vld <= '1';
+-- else
+--   /* clean up */
+--   i_din_vld <= '0';
+-- end if;
+-- ```
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -186,8 +199,7 @@ begin
 
   -- The new input data is loaded into the shift register when the SPI slave
   -- is ready and input data are valid.
-  -- TODO LORIS: maybe no need for r1_slave_ready here
-  w_load_data_en <= (r1_slave_ready or r2_slave_ready) and i_din_vld;
+  w_load_data_en <= r2_slave_ready and i_din_vld;
 
   -- -------------------------------------------------------------------------
   --  DATA SHIFT REGISTER
@@ -230,8 +242,7 @@ begin
   --  ASSIGNING OUTPUT SIGNALS
   -- -------------------------------------------------------------------------
 
-  -- TODO LORIS: maybe just need r1_slave_ready or r2_slave_ready here
-  o_din_rdy  <= (w_slave_ready or r1_slave_ready or r2_slave_ready);
+  o_din_rdy  <= r1_slave_ready;
   o_dout     <= r_data_shreg;
   o_dout_vld <= w_rx_data_vld;
 
