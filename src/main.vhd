@@ -277,9 +277,8 @@ begin
               r_spi_din_vld <= '0';
             end if;
 
-        end case;
-      end if;
-    end if;
-  end process;
-
-end architecture;
+        end case; --         end case r_state
+      end if;     --       end if i_rst = '1'
+    end if;       --     end if rising_edge(i_clk)
+  end process;    --   end process (i_clk)
+end architecture; -- end architecture RTL of SPIFIFO
