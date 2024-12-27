@@ -23,9 +23,8 @@ end RAM;
 architecture RTL of RAM is
 
   -- Create memory that is DEPTH x WIDTH.
-  -- Block RAM will be likely inferred by the synthesizer.
-  -- TODO LORIS: do I need a separate type?
-  type MemoryType is array (0 to DEPTH-1) of std_logic_vector(WIDTH-1 downto 0);
+  -- The synthesizer is likely going to infer Block RAM for it.
+  type MemoryType is array(0 to DEPTH-1) of std_logic_vector(WIDTH-1 downto 0);
   signal r_memory : MemoryType;
 
 begin
@@ -42,7 +41,7 @@ begin
   process (i_rd_clk)
   begin
     if rising_edge(i_rd_clk) then
-      -- TODO LORIS: try adding if i_Rd_En = '1' then
+      -- TODO LORIS: try adding if i_rd_en = '1' then
       o_rd_data <= r_memory(to_integer(unsigned(i_rd_addr)));
     end if;
   end process;
