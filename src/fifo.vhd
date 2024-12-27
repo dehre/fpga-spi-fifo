@@ -22,9 +22,8 @@ entity FIFO is
     o_rd_data  : out std_logic_vector(WIDTH-1 downto 0);
 
     -- Flags
-    i_ae_level : in  integer;
-    i_af_level : in  integer;
     o_full     : out std_logic;
+    -- TODO LORIS: rename flags
     o_af_flag  : out std_logic;
     o_ae_flag  : out std_logic;
     o_empty    : out std_logic);
@@ -115,9 +114,9 @@ begin
 
   -- TODO LORIS: if r_Count=0 or r_Count=1 and i_Rd_En=1
   -- TODO LORIS: clean up parentheses
-  o_full <= '1' when ((r_count=DEPTH) or (r_count=DEPTH-1 and i_wr_dv='1')) else '0';
-  o_empty <= '1' when (r_count = 0) else '0';
-  o_af_flag <= '1' when ((r_count>=(DEPTH-i_af_level)) or (r_count>=(DEPTH-1-i_af_level) and i_wr_dv='1')) else '0';
-  o_ae_flag <= '1' when (r_count <= i_ae_level) else '0';
+  o_full <= '1' when (r_count = DEPTH) or (r_count = DEPTH-1 and i_wr_dv = '1') else '0';
+  o_af_flag <= '1' when (r_count >= DEPTH-1) or (r_count >= DEPTH-2 and i_wr_dv = '1') else '0';
+  o_empty <= '1' when (r_count=0) else '0';
+  o_ae_flag <= '1' when (r_count<=1) else '0';
 
 end architecture;

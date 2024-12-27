@@ -139,8 +139,6 @@ begin
       i_rd_en    => r_fifo_rd_en,
       i_rd_undo  => r_fifo_rd_undo,
       o_rd_data  => w_fifo_rd_data,
-      i_af_level => 1, -- TODO LORIS: generics
-      i_ae_level => 1,
       o_full     => w_fifo_full,
       o_af_flag  => w_fifo_almost_full,
       o_ae_flag  => w_fifo_almost_empty,
