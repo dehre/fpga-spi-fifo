@@ -1,20 +1,21 @@
 -- Adapted from:
 -- https://github.com/jakubcabal/spi-fpga/tree/d8240ff3f59fdeeadd87692333aeafb69b0b88a1
 --
--- TODO LORIS: write better
 -- Changes:
 -- * set MISO to high impedance state when inactive;
 -- * stretch o_din_rdy to two clock cycles to allow setting response in state machine
--- Usage:
+--
+-- Updated Usage:
 -- ```
 -- if o_dout_vld = '1' then
---   /* data available on o_dout */
+--   /* new data available on o_dout */
+--   r_buffer <= o_dout;
 -- elsif o_din_rdy = '1' then
---   /* set i_din to desired value */
+--   /* ready to set response on i_din */
 --   i_din <= x"55";
 --   i_din_vld <= '1';
 -- else
---   /* clean up */
+--   /* default state */
 --   i_din_vld <= '0';
 -- end if;
 -- ```
