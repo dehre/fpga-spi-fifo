@@ -34,18 +34,18 @@ architecture RTL of SPIFIFO is
   constant WORD_SIZE   : integer := 8;
   constant FIFO_DEPTH  : integer := 5;
 
-  -- Constants for SPI commands - Inputs
+  -- Constants for incoming commands
   constant CMD_COUNT : std_logic_vector(WORD_SIZE-1 downto 0) := x"F0";
   constant CMD_WRITE : std_logic_vector(WORD_SIZE-1 downto 0) := x"F1";
   constant CMD_READ  : std_logic_vector(WORD_SIZE-1 downto 0) := x"F2";
 
-  -- Constants for SPI commands - Outputs
+  -- Constants for outcoming replies
   constant ACK        : std_logic_vector(WORD_SIZE-1 downto 0) := x"FA";
   constant NACK       : std_logic_vector(WORD_SIZE-1 downto 0) := x"FB";
   constant FIFO_EMPTY : std_logic_vector(WORD_SIZE-1 downto 0) := x"FE";
   constant FIFO_FULL  : std_logic_vector(WORD_SIZE-1 downto 0) := x"FF";
 
-  -- Signals for SPI Slave
+  -- Signals for SPISlave
   signal r_spi_din      : std_logic_vector(WORD_SIZE-1 downto 0);
   signal r_spi_din_vld  : std_logic;
   signal w_spi_din_rdy  : std_logic;
@@ -58,6 +58,8 @@ architecture RTL of SPIFIFO is
   signal r_fifo_rd_undo      : std_logic;
   signal r_fifo_wr_data      : std_logic_vector(WORD_SIZE-1 downto 0);
   signal w_fifo_rd_data      : std_logic_vector(WORD_SIZE-1 downto 0);
+
+  -- FIFO Flags
   signal w_fifo_full         : std_logic;
   signal w_fifo_empty        : std_logic;
   signal w_fifo_almost_full  : std_logic;
@@ -276,6 +278,7 @@ begin
             else
               r_spi_din_vld <= '0';
             end if;
+
 
         end case; --         end case r_state
       end if;     --       end if i_rst = '1'
