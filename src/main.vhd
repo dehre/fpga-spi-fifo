@@ -39,17 +39,16 @@ architecture RTL of SPIFIFO is
 
   -- Constants for SPI commands - Inputs
   -- TODO LORIS: create type
-  -- TODO LORIS: rename CMD_STATUS to CMD_COUNT
-  constant CMD_STATUS : std_logic_vector(7 downto 0) := x"FA";
-  constant CMD_READ   : std_logic_vector(7 downto 0) := x"FB";
-  constant CMD_WRITE  : std_logic_vector(7 downto 0) := x"FC";
+  constant CMD_COUNT : std_logic_vector(7 downto 0) := x"F0";
+  constant CMD_WRITE : std_logic_vector(7 downto 0) := x"F1";
+  constant CMD_READ  : std_logic_vector(7 downto 0) := x"F2";
 
   -- Constants for SPI commands - Outputs
   -- TODO LORIS: create type
-  constant ACK         : std_logic_vector(7 downto 0) := x"AA";
-  constant NACK        : std_logic_vector(7 downto 0) := x"BB";
-  constant FIFO_EMPTY  : std_logic_vector(7 downto 0) := x"FE";
-  constant FIFO_FULL   : std_logic_vector(7 downto 0) := x"FF";
+  constant ACK        : std_logic_vector(7 downto 0) := x"FA";
+  constant NACK       : std_logic_vector(7 downto 0) := x"FB";
+  constant FIFO_EMPTY : std_logic_vector(7 downto 0) := x"FE";
+  constant FIFO_FULL  : std_logic_vector(7 downto 0) := x"FF";
 
   -- Signals for SPI Slave
   signal r_spi_din      : std_logic_vector(7 downto 0); -- Data to send via SPI
@@ -79,9 +78,8 @@ architecture RTL of SPIFIFO is
 
   signal r_cmd : std_logic_vector(7 downto 0);
 
-  -- Internal states for managing SPI commands
-  -- TODO LORIS: rename STATUS to COUNT
-  type StateType is (IDLE, STATUS, WRITE, READ);
+  -- FSM States
+  type StateType is (IDLE, COUNT, WRITE, READ);
   signal r_state : StateType;
 
   -- Abstract logic for responding to a command
@@ -174,8 +172,8 @@ begin
               r_cmd <= w_spi_dout;
             elsif w_spi_din_rdy = '1' then
               case r_cmd is
-                when CMD_STATUS =>
-                  r_state <= STATUS;
+                when CMD_COUNT =>
+                  r_state <= COUNT;
                   r_spi_din <= f_acknowledge_cmd(w_fifo_full, w_fifo_empty);
                   r_spi_din_vld <= '1';
                 when CMD_WRITE =>
@@ -195,7 +193,7 @@ begin
               r_spi_din_vld <= '0';
             end if;
 
-          when STATUS =>
+          when COUNT =>
             if i_spi_cs_n = '1' then
               r_state <= IDLE;
             else
