@@ -167,8 +167,12 @@ begin
 
           when IDLE =>
             r_fifo_rd_undo <= '0'; -- TODO LORIS: move somewhere else
+
+            -- if new data received:
             if w_spi_dout_vld = '1' then
               r_cmd <= w_spi_dout;
+
+            -- if ready to send response:
             elsif w_spi_din_rdy = '1' then
               case r_cmd is
                 when CMD_COUNT =>
@@ -188,14 +192,14 @@ begin
                   r_spi_din <= NACK;
                   r_spi_din_vld <= '1';
               end case;
+
             else
               r_spi_din_vld <= '0';
             end if;
 
 
           when COUNT =>
-
-            -- if terminating count operation:
+            -- if requested to leave COUNT state:
             if i_spi_cs_n = '1' then
               r_state <= IDLE;
 
@@ -211,8 +215,7 @@ begin
 
 
           when WRITE =>
-
-            -- if terminating write operation:
+            -- if requested to leave WRITE state:
             if i_spi_cs_n = '1' then
               r_first_write_skipped <= '0';
               r_state <= IDLE;
@@ -243,8 +246,7 @@ begin
 
 
           when READ =>
-
-            -- if terminating read operation:
+            -- if requested to leave READ state:
             if i_spi_cs_n = '1' then
               if r_read_prefetched = '1' then
                 r_fifo_rd_undo <= '1';
