@@ -192,6 +192,7 @@ begin
               r_spi_din_vld <= '0';
             end if;
 
+
           when COUNT =>
             if i_spi_cs_n = '1' then
               r_state <= IDLE;
@@ -235,29 +236,31 @@ begin
 
 
           when READ =>
-            if i_spi_cs_n = '1' then
-              r_state <= IDLE;
+            if i_spi_cs_n = '1' then          -- if terminating_write_operation then
               if r_read_prefetched = '1' then
-                r_read_prefetched <= '0';
                 r_fifo_rd_undo <= '1';
               end if;
-            elsif w_spi_dout_vld = '1' then
-              if w_fifo_empty = '0' then
+              r_read_prefetched <= '0';
+              r_state <= IDLE;
+
+            elsif w_spi_dout_vld = '1' then   -- elsif new_data_received then
+              if w_fifo_empty = '1' then
+                r_read_prefetched <= '0';
+              else
                 r_fifo_rd_en <= '1';
                 r_read_prefetched <= '1';
-              else
-                r_read_prefetched <= '0';
               end if;
-            elsif w_spi_din_rdy = '1' then
+
+            elsif w_spi_din_rdy = '1' then    -- elsif ready_to_send_response then
               r_fifo_rd_en <= '0';
-              -- r_spi_din <= w_fifo_rd_data when w_fifo_empty = '0' else FIFO_EMPTY;
-              if r_read_prefetched = '0' then
-                r_spi_din <= FIFO_EMPTY;
-              else
-                r_spi_din <= w_fifo_rd_data;
-              end if;
               r_spi_din_vld <= '1';
-            else
+              if r_read_prefetched = '1' then
+                r_spi_din <= w_fifo_rd_data;
+              else
+                r_spi_din <= FIFO_EMPTY;
+              end if;
+
+            else                              -- else
               r_spi_din_vld <= '0';
             end if;
 
