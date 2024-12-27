@@ -194,32 +194,39 @@ begin
 
 
           when COUNT =>
+
+            -- if terminating count operation:
             if i_spi_cs_n = '1' then
               r_state <= IDLE;
+
+            -- if ready to send response:
+            elsif w_spi_din_rdy = '1' then
+              -- TODO LORIS: use real data
+              r_spi_din <= std_logic_vector(to_unsigned(74, r_spi_din'length));
+              r_spi_din_vld <= '1';
+
             else
-              if w_spi_din_rdy = '1' then
-                -- TODO LORIS: use real data
-                r_spi_din <= std_logic_vector(to_unsigned(74, r_spi_din'length));
-                r_spi_din_vld <= '1';
-              else
-                r_spi_din_vld <= '0';
-              end if;
+              r_spi_din_vld <= '0';
             end if;
 
 
           when WRITE =>
-            if i_spi_cs_n = '1' then          -- if terminating_write_operation then
+
+            -- if terminating write operation:
+            if i_spi_cs_n = '1' then
               r_first_write_skipped <= '0';
               r_state <= IDLE;
 
-            elsif w_spi_dout_vld = '1' then   -- elsif new_data_received then
+            -- if new data received:
+            elsif w_spi_dout_vld = '1' then
               r_first_write_skipped <= '1';
               if r_first_write_skipped = '1' and w_fifo_full = '0' then
                 r_fifo_wr_data <= w_spi_dout;
                 r_fifo_wr_en <= '1';
               end if;
 
-            elsif w_spi_din_rdy = '1' then    -- elsif ready_to_send_response then
+            -- if ready to send response:
+            elsif w_spi_din_rdy = '1' then
               r_fifo_wr_en <= '0';
               r_spi_din_vld <= '1';
               if w_fifo_full = '1' then
@@ -230,20 +237,23 @@ begin
                 r_spi_din <= ACK;
               end if;
 
-            else                              -- else
+            else
               r_spi_din_vld <= '0';
             end if;
 
 
           when READ =>
-            if i_spi_cs_n = '1' then          -- if terminating_write_operation then
+
+            -- if terminating read operation:
+            if i_spi_cs_n = '1' then
               if r_read_prefetched = '1' then
                 r_fifo_rd_undo <= '1';
               end if;
               r_read_prefetched <= '0';
               r_state <= IDLE;
 
-            elsif w_spi_dout_vld = '1' then   -- elsif new_data_received then
+            -- if new data received:
+            elsif w_spi_dout_vld = '1' then
               if w_fifo_empty = '1' then
                 r_read_prefetched <= '0';
               else
@@ -251,7 +261,8 @@ begin
                 r_read_prefetched <= '1';
               end if;
 
-            elsif w_spi_din_rdy = '1' then    -- elsif ready_to_send_response then
+            -- if ready to send response:
+            elsif w_spi_din_rdy = '1' then
               r_fifo_rd_en <= '0';
               r_spi_din_vld <= '1';
               if r_read_prefetched = '1' then
@@ -260,7 +271,7 @@ begin
                 r_spi_din <= FIFO_EMPTY;
               end if;
 
-            else                              -- else
+            else
               r_spi_din_vld <= '0';
             end if;
 
