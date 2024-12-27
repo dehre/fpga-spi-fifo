@@ -59,22 +59,22 @@ begin
   w_Rd_Addr <= std_logic_vector(to_unsigned(r_Rd_Addr, DEPTH_BITS));
 
   -- Dual Port RAM used for storing FIFO data
-  Memory_Inst : entity work.RAM_2Port
+  RamInstance : entity work.RAM
     generic map(
       WIDTH => WIDTH,
       DEPTH => DEPTH)
     port map(
       -- Write Port
-      i_Wr_Clk  => i_Clk,
-      i_Wr_Addr => w_Wr_Addr,
-      i_Wr_DV   => i_Wr_DV,
-      i_Wr_Data => i_Wr_Data,
+      i_wr_clk  => i_Clk,
+      i_wr_addr => w_Wr_Addr,
+      i_wr_dv   => i_Wr_DV,
+      i_wr_data => i_Wr_Data,
 
       -- Read Port
-      i_Rd_Clk  => i_Clk,
-      i_Rd_Addr => w_Rd_Addr,
-      i_Rd_En   => i_Rd_En,
-      o_Rd_Data => o_Rd_Data);
+      i_rd_clk  => i_Clk,
+      i_rd_addr => w_Rd_Addr,
+      i_rd_en   => i_Rd_En,
+      o_rd_data => o_Rd_Data);
 
   -- Main process to control address and counters for FIFO
   -- TODO LORIS: positive reset line

@@ -1,65 +1,50 @@
--- Russell Merrick - http://www.nandland.com
---
--- Creates a Dual (2) Port RAM (Random Access Memory)
--- Single port RAM has one port, so can only access one memory location at a time.
--- Dual port RAM can read and write to different memory locations at the same time.
--- 
--- Generic: WIDTH sets the width of the Memory created.
--- Generic: DEPTH sets the depth of the Memory created.
--- Likely tools will infer Block RAM if WIDTH/DEPTH is large enough.
--- If small, tools will infer register-based memory.
--- 
--- Can be used in two different clock domains, or can tie i_Wr_Clk 
--- and i_Rd_Clk to same clock for operation in a single clock domain.
-
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity RAM_2Port is
+entity RAM is
   generic (
-    WIDTH : integer := 16;
-    DEPTH : integer := 256
-    );
+    WIDTH : integer := 8;
+    DEPTH : integer := 256);
   port (
     -- Write signals
-    i_Wr_Clk  : in  std_logic;
-    i_Wr_Addr : in  std_logic_vector; -- Gets sized at higher level
-    i_Wr_DV   : in  std_logic;
-    i_Wr_Data : in  std_logic_vector(WIDTH-1 downto 0);
+    i_wr_clk  : in  std_logic;
+    i_wr_addr : in  std_logic_vector; -- Gets sized at higher level
+    i_wr_dv   : in  std_logic;
+    i_wr_data : in  std_logic_vector(WIDTH-1 downto 0);
     -- Read signals
-    i_Rd_Clk  : in  std_logic;
-    i_Rd_Addr : in  std_logic_vector; -- Gets sized at higher level
-    i_Rd_En   : in  std_logic;
-    o_Rd_Data : out std_logic_vector(WIDTH-1 downto 0)
+    i_rd_clk  : in  std_logic;
+    i_rd_addr : in  std_logic_vector; -- Gets sized at higher level
+    i_rd_en   : in  std_logic;
+    o_rd_data : out std_logic_vector(WIDTH-1 downto 0)
     );
-end RAM_2Port;
+end RAM;
 
-architecture RTL of RAM_2Port is
+architecture RTL of RAM is
 
-  -- Create Memory that is DEPTH x WIDTH
-  type t_Mem is array (0 to DEPTH-1) of std_logic_vector(WIDTH-1 downto 0);
-  signal r_Mem : t_Mem;
+  -- Create memory that is DEPTH x WIDTH.
+  -- Block RAM will be likely inferred by the synthesizer.
+  -- TODO LORIS: do I need a separate type?
+  type MemoryType is array (0 to DEPTH-1) of std_logic_vector(WIDTH-1 downto 0);
+  signal r_memory : MemoryType;
 
 begin
 
-  -- Purpose: Control Writes to Memory.
-  process (i_Wr_Clk)
+  process (i_wr_clk)
   begin
-    if rising_edge(i_Wr_Clk) then
-      if i_Wr_DV = '1' then
-        r_Mem(to_integer(unsigned(i_Wr_Addr))) <= i_Wr_Data;
+    if rising_edge(i_wr_clk) then
+      if i_wr_dv = '1' then
+        r_memory(to_integer(unsigned(i_wr_addr))) <= i_wr_data;
       end if;
     end if;
   end process;
 
-  -- Purpose: Control Reads From Memory.
-  process (i_Rd_Clk)
+  process (i_rd_clk)
   begin
-    if rising_edge(i_Rd_Clk) then
+    if rising_edge(i_rd_clk) then
       -- TODO LORIS: try adding if i_Rd_En = '1' then
-      o_Rd_Data <= r_Mem(to_integer(unsigned(i_Rd_Addr)));
+      o_rd_data <= r_memory(to_integer(unsigned(i_rd_addr)));
     end if;
   end process;
 
-end RTL;
+end architecture;
