@@ -214,6 +214,7 @@ begin
 
             elsif w_spi_din_rdy = '1' then    -- elsif ready_to_send_response then
               r_fifo_wr_en <= '0';
+              r_spi_din_vld <= '1';
               if w_fifo_full = '1' then
                 r_spi_din <= NACK;
               elsif w_fifo_almost_full = '1' then
@@ -221,7 +222,6 @@ begin
               else
                 r_spi_din <= ACK;
               end if;
-              r_spi_din_vld <= '1';
 
             else                              -- else
               r_spi_din_vld <= '0';
