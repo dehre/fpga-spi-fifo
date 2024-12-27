@@ -1,20 +1,3 @@
--- Russell Merrick - http://www.nandland.com
---
--- Infers a Dual Port RAM (DPRAM) Based FIFO using a single clock
--- Uses a Dual Port RAM but automatically handles read/write addresses.
--- To use Almost Full/Empty Flags (dynamic)
--- Set i_AF_Level to number of words away from full when o_AF_Flag goes high
--- Set i_AE_Level to number of words away from empty when o_AE goes high
---   o_AE_Flag is high when this number OR LESS is in FIFO.
---
--- Generics: 
--- WIDTH     - Width of the FIFO
--- DEPTH     - Max number of items able to be stored in the FIFO
---
--- This FIFO cannot be used to cross clock domains, because in order to keep count
--- correctly it would need to handle all metastability issues. 
--- If crossing clock domains is required, use FIFO primitives directly from the vendor.
-
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -26,19 +9,23 @@ entity FIFO is
     WIDTH     : integer := 8;
     DEPTH     : integer := 256);
   port (
-    i_rst_l : in std_logic;
     i_clk   : in std_logic;
+    i_rst   : in std_logic;
+
     -- Write Side
     i_wr_dv    : in  std_logic;
     i_wr_data  : in  std_logic_vector(WIDTH-1 downto 0);
-    i_af_level : in  integer;
-    o_af_flag  : out std_logic;
-    o_full     : out std_logic;
+
     -- Read Side
     i_rd_en    : in  std_logic;
-    i_rd_undo  : in  std_logic;
+    i_rd_undo  : in  std_logic; -- undo last read operation
     o_rd_data  : out std_logic_vector(WIDTH-1 downto 0);
+
+    -- Flags
     i_ae_level : in  integer;
+    i_af_level : in  integer;
+    o_full     : out std_logic;
+    o_af_flag  : out std_logic;
     o_ae_flag  : out std_logic;
     o_empty    : out std_logic);
 end entity FIFO;
@@ -48,15 +35,16 @@ architecture RTL of FIFO is
   -- Number of bits required to store DEPTH words
   constant DEPTH_BITS : integer := integer(ceil(log2(real(DEPTH))));
 
-  signal r_wr_addr, r_rd_addr : natural range 0 to DEPTH-1;
-  signal r_count : natural range 0 to DEPTH;
-
-  signal w_wr_addr, w_rd_addr : std_logic_vector(DEPTH_BITS-1 downto 0);
+  signal r_count   : natural range 0 to DEPTH;
+  signal r_wr_idx  : natural range 0 to DEPTH-1;
+  signal r_rd_idx  : natural range 0 to DEPTH-1;
+  signal w_wr_addr : std_logic_vector(DEPTH_BITS-1 downto 0);
+  signal w_rd_addr : std_logic_vector(DEPTH_BITS-1 downto 0);
 
 begin
 
-  w_wr_addr <= std_logic_vector(to_unsigned(r_wr_addr, DEPTH_BITS));
-  w_rd_addr <= std_logic_vector(to_unsigned(r_rd_addr, DEPTH_BITS));
+  w_wr_addr <= std_logic_vector(to_unsigned(r_wr_idx, DEPTH_BITS));
+  w_rd_addr <= std_logic_vector(to_unsigned(r_rd_idx, DEPTH_BITS));
 
   -- Dual Port RAM used for storing FIFO data
   RamInstance : entity work.RAM
@@ -79,38 +67,38 @@ begin
   -- Main process to control address and counters for FIFO
   -- TODO LORIS: positive reset line
   -- TODO LORIS: reset on rising_edge(i_clk)
-  process (i_clk, i_rst_l) is
+  process (i_clk, i_rst) is
   begin
-    if i_rst_l = '0' then
-      r_wr_addr <= 0;
-      r_rd_addr <= 0;
+    if i_rst = '1' then
+      r_wr_idx <= 0;
+      r_rd_idx <= 0;
       r_count   <= 0;
     elsif rising_edge(i_clk) then
       
       -- Write
       if i_wr_dv = '1' then
-        if r_wr_addr = DEPTH-1 then
-          r_wr_addr <= 0;
+        if r_wr_idx = DEPTH-1 then
+          r_wr_idx <= 0;
         else
-          r_wr_addr <= r_wr_addr + 1;
+          r_wr_idx <= r_wr_idx + 1;
         end if;
       end if;
 
       -- Read
       if i_rd_en = '1' then
-        if r_rd_addr = DEPTH-1 then
-          r_rd_addr <= 0;
+        if r_rd_idx = DEPTH-1 then
+          r_rd_idx <= 0;
         else
-          r_rd_addr <= r_rd_addr + 1;
+          r_rd_idx <= r_rd_idx + 1;
         end if;
       end if;
 
       -- Undo Read
       if i_rd_undo = '1' then
-        if r_rd_addr = 0 then
-          r_rd_addr <= DEPTH-1;
+        if r_rd_idx = 0 then
+          r_rd_idx <= DEPTH-1;
         else
-          r_rd_addr <= r_rd_addr - 1;
+          r_rd_idx <= r_rd_idx - 1;
         end if;
       end if;
 

@@ -132,19 +132,17 @@ begin
       WIDTH => WORD_SIZE,
       DEPTH => FIFO_DEPTH)
     port map (
-      i_rst_l => not i_rst,
       i_clk   => i_clk,
-      -- Write Side
+      i_rst   => i_rst,
       i_wr_dv    => r_fifo_wr_en,
       i_wr_data  => r_fifo_wr_data,
-      i_af_level => 1, -- TODO LORIS: generics
-      o_af_flag  => w_fifo_almost_full,
-      o_full     => w_fifo_full,
-      -- Read Side
       i_rd_en    => r_fifo_rd_en,
       i_rd_undo  => r_fifo_rd_undo,
       o_rd_data  => w_fifo_rd_data,
+      i_af_level => 1, -- TODO LORIS: generics
       i_ae_level => 1,
+      o_full     => w_fifo_full,
+      o_af_flag  => w_fifo_almost_full,
       o_ae_flag  => w_fifo_almost_empty,
       o_empty    => w_fifo_empty);
 
