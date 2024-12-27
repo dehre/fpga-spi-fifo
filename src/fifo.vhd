@@ -64,9 +64,6 @@ begin
       i_rd_en   => i_rd_en,
       o_rd_data => o_rd_data);
 
-  -- Main process to control address and counters for FIFO
-  -- TODO LORIS: positive reset line
-  -- TODO LORIS: reset on rising_edge(i_clk)
   process (i_clk, i_rst) is
   begin
     if i_rst = '1' then
@@ -102,20 +99,12 @@ begin
         end if;
       end if;
 
-      -- TODO LORIS: simplify
       -- Keeps track of number of words in FIFO
-      -- Read with no write
-      if i_rd_en = '1' and i_wr_dv = '0' and i_rd_undo = '0' then
+      if i_rd_en = '1'
         if (r_count /= 0) then
           r_count <= r_count - 1;
         end if;
-      -- write with no read
-      elsif i_wr_dv = '1' and i_rd_en = '0' and i_rd_undo = '0' then
-        if r_count /= DEPTH then
-          r_count <= r_count + 1;
-        end if;
-      -- Undo read
-      elsif i_rd_undo = '1' and i_wr_dv = '0' and i_rd_en = '0' then
+      elsif i_wr_dv = '1' or i_rd_undo = '1' then
         if r_count /= DEPTH then
           r_count <= r_count + 1;
         end if;

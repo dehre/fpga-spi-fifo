@@ -158,6 +158,7 @@ begin
   process (i_clk)
   begin
     if rising_edge(i_clk) then
+      -- TODO LORIS: keep reset out of clock
       if i_rst = '1' then
         r_cmd <= (others => '0');
         r_state <= IDLE;
