@@ -65,11 +65,17 @@ architecture RTL of SPIFIFO is
 
   -- Signals for FSM
   signal r_cmd : std_logic_vector(WORD_SIZE-1 downto 0);
-  signal r_fifo_read_prefetched      : std_logic;
 
   -- After CMD_WRITE, the first byte received should be skipped
   -- (i.e. it shouldn't be added to the FIFO)
   signal r_first_write_skipped : std_logic;
+
+  -- When CMD_READ is received, bytes are removed from the FIFO and
+  -- latched into the SPI module for transmission in the next response.
+  -- However, if the master asserts `i_spi_cs_n` before the FIFO is
+  -- empty, the last byte fetched from the FIFO will not be transmitted.
+  -- To ensure this byte isn't lost, it must be placed back into the FIFO.
+  signal r_read_prefetched      : std_logic;
 
 -- TODO LORIS: keep track of number of items in fifo,
 -- or maybe just expose the count register in the FIFO.
@@ -154,7 +160,7 @@ begin
         r_fifo_rd_en <= '0';
         r_fifo_rd_undo <= '0';
         r_first_write_skipped <= '0';
-        r_fifo_read_prefetched <= '0';
+        r_read_prefetched <= '0';
 
       else
         case r_state is
@@ -231,21 +237,21 @@ begin
           when READ =>
             if i_spi_cs_n = '1' then
               r_state <= IDLE;
-              if r_fifo_read_prefetched = '1' then
-                r_fifo_read_prefetched <= '0';
+              if r_read_prefetched = '1' then
+                r_read_prefetched <= '0';
                 r_fifo_rd_undo <= '1';
               end if;
             elsif w_spi_dout_vld = '1' then
               if w_fifo_empty = '0' then
                 r_fifo_rd_en <= '1';
-                r_fifo_read_prefetched <= '1';
+                r_read_prefetched <= '1';
               else
-                r_fifo_read_prefetched <= '0';
+                r_read_prefetched <= '0';
               end if;
             elsif w_spi_din_rdy = '1' then
               r_fifo_rd_en <= '0';
               -- r_spi_din <= w_fifo_rd_data when w_fifo_empty = '0' else FIFO_EMPTY;
-              if r_fifo_read_prefetched = '0' then
+              if r_read_prefetched = '0' then
                 r_spi_din <= FIFO_EMPTY;
               else
                 r_spi_din <= w_fifo_rd_data;
