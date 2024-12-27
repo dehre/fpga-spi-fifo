@@ -66,7 +66,8 @@ architecture RTL of SPIFIFO is
   signal w_fifo_almost_empty : std_logic;
 
   -- Signals for FSM
-  signal r_cmd : std_logic_vector(WORD_SIZE-1 downto 0);
+  signal r_cmd      : std_logic_vector(WORD_SIZE-1 downto 0);
+  signal r_spi_cs_n : std_logic;
 
   -- After CMD_WRITE, the first byte received should be skipped
   -- (i.e. it shouldn't be added to the FIFO)
@@ -147,12 +148,19 @@ begin
       o_AE_Flag  => w_fifo_almost_empty,
       o_Empty    => w_fifo_empty);
 
-  -- Main process to control SPI commands
+  -- Used by the READ state to stretch the cleanup operation
+  process (i_clk)
+  begin
+    if rising_edge(i_clk) then
+      r_spi_cs_n <= i_spi_cs_n;
+    end if;
+  end process;
+
+  -- Main process to control the Finite State Machine
   process (i_clk)
   begin
     if rising_edge(i_clk) then
       if i_rst = '1' then
-        -- Reset state
         r_cmd <= (others => '0');
         r_state <= IDLE;
         r_spi_din <= (others => '0');
@@ -168,8 +176,6 @@ begin
         case r_state is
 
           when IDLE =>
-            r_fifo_rd_undo <= '0'; -- TODO LORIS: move somewhere else
-
             -- if new data received:
             if w_spi_dout_vld = '1' then
               r_cmd <= w_spi_dout;
@@ -249,11 +255,13 @@ begin
 
           when READ =>
             -- if requested to leave READ state:
-            if i_spi_cs_n = '1' then
+            if i_spi_cs_n = '1' and r_spi_cs_n = '0' then
               if r_read_prefetched = '1' then
+                r_read_prefetched <= '0';
                 r_fifo_rd_undo <= '1';
               end if;
-              r_read_prefetched <= '0';
+            elsif r_spi_cs_n = '1' then
+              r_fifo_rd_undo <= '0';
               r_state <= IDLE;
 
             -- if new data received:
