@@ -98,14 +98,10 @@ architecture RTL of SPIFIFO is
 
 begin
 
-  -- Avoid picking up noise
-  -- o_debug_a <= '0'; -- TOGGLED ON CMD RECEIVED
-  -- o_debug_b <= '0'; -- TOGGLED ON SPI_DOUT_VLD
-  -- o_debug_c <= '0'; -- TOGGLED ON SPI_DIN_VLD
-
-  o_debug_a <= w_fifo_full;
-  o_debug_b <= w_fifo_almost_full;
-  o_debug_c <= w_fifo_almost_empty;
+  -- Debugging outputs set to low to avoid picking up noise
+  o_debug_a <= '0';
+  o_debug_b <= '0';
+  o_debug_c <= '0';
 
   -- Instantiate SPI Slave
   SPISlaveInstance : entity work.SPISlave
