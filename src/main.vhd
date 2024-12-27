@@ -132,17 +132,17 @@ begin
       WIDTH => WORD_SIZE,
       DEPTH => FIFO_DEPTH)
     port map (
-      i_clk   => i_clk,
-      i_rst   => i_rst,
-      i_wr_dv    => r_fifo_wr_en,
-      i_wr_data  => r_fifo_wr_data,
-      i_rd_en    => r_fifo_rd_en,
-      i_rd_undo  => r_fifo_rd_undo,
-      o_rd_data  => w_fifo_rd_data,
-      o_full     => w_fifo_full,
-      o_af_flag  => w_fifo_almost_full,
-      o_ae_flag  => w_fifo_almost_empty,
-      o_empty    => w_fifo_empty);
+      i_clk          => i_clk,
+      i_rst          => i_rst,
+      i_wr_dv        => r_fifo_wr_en,
+      i_wr_data      => r_fifo_wr_data,
+      i_rd_en        => r_fifo_rd_en,
+      i_rd_undo      => r_fifo_rd_undo,
+      o_rd_data      => w_fifo_rd_data,
+      o_full         => w_fifo_full,
+      o_almost_full  => w_fifo_almost_full,
+      o_almost_empty => w_fifo_almost_empty,
+      o_empty        => w_fifo_empty);
 
   -- Used by the READ state to stretch the cleanup operation
   process (i_clk)

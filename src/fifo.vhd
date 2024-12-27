@@ -5,27 +5,26 @@ use ieee.math_real.all;
 
 entity FIFO is 
   generic (
-    WIDTH      : natural := 8;
-    DEPTH      : natural := 256);
+    WIDTH : natural := 8;
+    DEPTH : natural := 256);
   port (
-    i_clk      : in std_logic;
-    i_rst      : in std_logic;
+    i_clk          : in std_logic;
+    i_rst          : in std_logic;
 
     -- Write Side
-    i_wr_dv    : in  std_logic;
-    i_wr_data  : in  std_logic_vector(WIDTH-1 downto 0);
+    i_wr_dv        : in  std_logic;
+    i_wr_data      : in  std_logic_vector(WIDTH-1 downto 0);
 
     -- Read Side
-    i_rd_en    : in  std_logic;
-    i_rd_undo  : in  std_logic; -- undo last read operation
-    o_rd_data  : out std_logic_vector(WIDTH-1 downto 0);
+    i_rd_en        : in  std_logic;
+    i_rd_undo      : in  std_logic; -- undo last read operation
+    o_rd_data      : out std_logic_vector(WIDTH-1 downto 0);
 
     -- Flags
-    o_full     : out std_logic;
-    -- TODO LORIS: rename flags
-    o_af_flag  : out std_logic;
-    o_ae_flag  : out std_logic;
-    o_empty    : out std_logic);
+    o_full         : out std_logic;
+    o_almost_full  : out std_logic;
+    o_almost_empty : out std_logic;
+    o_empty        : out std_logic);
 end entity FIFO;
 
 architecture RTL of FIFO is 
@@ -111,9 +110,20 @@ begin
     end if;
   end process;
 
-  o_full <= '1' when (r_count = DEPTH) or (r_count = DEPTH-1 and i_wr_dv = '1') else '0';
-  o_af_flag <= '1' when (r_count >= DEPTH-1) or (r_count >= DEPTH-2 and i_wr_dv = '1') else '0';
-  o_ae_flag <= '1' when (r_count <= 1) or (r_count <= 2 and i_rd_en = '1') else '0';
-  o_empty <= '1' when (r_count = 0) or (r_count = 1 and i_rd_en = '1') else '0';
+  o_full <= '1'
+    when (r_count = DEPTH) or (r_count = DEPTH-1 and i_wr_dv = '1')
+    else '0';
+
+  o_almost_full <= '1'
+    when (r_count >= DEPTH-1) or (r_count >= DEPTH-2 and i_wr_dv = '1')
+    else '0';
+
+  o_almost_empty <= '1'
+    when (r_count <= 1) or (r_count <= 2 and i_rd_en = '1')
+    else '0';
+
+  o_empty <= '1'
+    when (r_count = 0) or (r_count = 1 and i_rd_en = '1')
+    else '0';
 
 end architecture;
