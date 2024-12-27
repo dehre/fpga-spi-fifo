@@ -112,11 +112,9 @@ begin
     end if;
   end process;
 
-  -- TODO LORIS: if r_Count=0 or r_Count=1 and i_Rd_En=1
-  -- TODO LORIS: clean up parentheses
   o_full <= '1' when (r_count = DEPTH) or (r_count = DEPTH-1 and i_wr_dv = '1') else '0';
   o_af_flag <= '1' when (r_count >= DEPTH-1) or (r_count >= DEPTH-2 and i_wr_dv = '1') else '0';
-  o_empty <= '1' when (r_count=0) else '0';
-  o_ae_flag <= '1' when (r_count<=1) else '0';
+  o_ae_flag <= '1' when (r_count <= 1) or (r_count <= 2 and i_rd_en = '1') else '0';
+  o_empty <= '1' when (r_count = 0) or (r_count = 1 and i_rd_en = '1') else '0';
 
 end architecture;
