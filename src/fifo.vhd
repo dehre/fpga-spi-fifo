@@ -100,7 +100,7 @@ begin
       end if;
 
       -- Keeps track of number of words in FIFO
-      if i_rd_en = '1'
+      if i_rd_en = '1' then
         if (r_count /= 0) then
           r_count <= r_count - 1;
         end if;
