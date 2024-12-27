@@ -41,7 +41,6 @@ begin
   process (i_rd_clk)
   begin
     if rising_edge(i_rd_clk) then
-      -- TODO LORIS: try adding if i_rd_en = '1' then
       o_rd_data <= r_memory(to_integer(unsigned(i_rd_addr)));
     end if;
   end process;
