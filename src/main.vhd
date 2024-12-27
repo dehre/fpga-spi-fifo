@@ -39,19 +39,19 @@ architecture RTL of SPIFIFO is
 
   -- Constants for SPI commands - Inputs
   -- TODO LORIS: create type
-  constant CMD_COUNT : std_logic_vector(7 downto 0) := x"F0";
-  constant CMD_WRITE : std_logic_vector(7 downto 0) := x"F1";
-  constant CMD_READ  : std_logic_vector(7 downto 0) := x"F2";
+  constant CMD_COUNT : std_logic_vector(WORD_SIZE-1 downto 0) := x"F0";
+  constant CMD_WRITE : std_logic_vector(WORD_SIZE-1 downto 0) := x"F1";
+  constant CMD_READ  : std_logic_vector(WORD_SIZE-1 downto 0) := x"F2";
 
   -- Constants for SPI commands - Outputs
   -- TODO LORIS: create type
-  constant ACK        : std_logic_vector(7 downto 0) := x"FA";
-  constant NACK       : std_logic_vector(7 downto 0) := x"FB";
-  constant FIFO_EMPTY : std_logic_vector(7 downto 0) := x"FE";
-  constant FIFO_FULL  : std_logic_vector(7 downto 0) := x"FF";
+  constant ACK        : std_logic_vector(WORD_SIZE-1 downto 0) := x"FA";
+  constant NACK       : std_logic_vector(WORD_SIZE-1 downto 0) := x"FB";
+  constant FIFO_EMPTY : std_logic_vector(WORD_SIZE-1 downto 0) := x"FE";
+  constant FIFO_FULL  : std_logic_vector(WORD_SIZE-1 downto 0) := x"FF";
 
   -- Signals for SPI Slave
-  signal r_spi_din      : std_logic_vector(7 downto 0); -- Data to send via SPI
+  signal r_spi_din      : std_logic_vector(WORD_SIZE-1 downto 0);
   signal r_spi_din_vld  : std_logic;
   signal w_spi_din_rdy  : std_logic;
   signal w_spi_dout     : std_logic_vector(WORD_SIZE-1 downto 0);
@@ -61,22 +61,21 @@ architecture RTL of SPIFIFO is
   signal r_fifo_wr_en        : std_logic;
   signal r_fifo_rd_en        : std_logic;
   signal r_fifo_rd_undo      : std_logic;
-  signal r_fifo_wr_data      : std_logic_vector(7 downto 0);
-  signal w_fifo_rd_data      : std_logic_vector(7 downto 0);
+  signal r_fifo_wr_data      : std_logic_vector(WORD_SIZE-1 downto 0);
+  signal w_fifo_rd_data      : std_logic_vector(WORD_SIZE-1 downto 0);
   signal w_fifo_full         : std_logic;
   signal w_fifo_empty        : std_logic;
   signal w_fifo_almost_full  : std_logic;
   signal w_fifo_almost_empty : std_logic;
 
-  -- Signal for FSM
+  -- Signals for FSM
+  signal r_cmd : std_logic_vector(WORD_SIZE-1 downto 0);
   signal r_ignore_first_written_byte : std_logic;
   signal r_fifo_read_prefetched      : std_logic;
 
 -- TODO LORIS: keep track of number of items in fifo,
 -- or maybe just expose the count register in the FIFO.
 -- signal r_fifo_count : natural range 0 to 99;
-
-  signal r_cmd : std_logic_vector(7 downto 0);
 
   -- FSM States
   type StateType is (IDLE, COUNT, WRITE, READ);
