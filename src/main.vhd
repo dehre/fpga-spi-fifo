@@ -65,8 +65,11 @@ architecture RTL of SPIFIFO is
 
   -- Signals for FSM
   signal r_cmd : std_logic_vector(WORD_SIZE-1 downto 0);
-  signal r_ignore_first_written_byte : std_logic;
   signal r_fifo_read_prefetched      : std_logic;
+
+  -- After CMD_WRITE, the first byte received should be skipped
+  -- (i.e. it shouldn't be added to the FIFO)
+  signal r_first_write_skipped : std_logic;
 
 -- TODO LORIS: keep track of number of items in fifo,
 -- or maybe just expose the count register in the FIFO.
@@ -150,7 +153,7 @@ begin
         r_fifo_wr_en <= '0';
         r_fifo_rd_en <= '0';
         r_fifo_rd_undo <= '0';
-        r_ignore_first_written_byte <= '1';
+        r_first_write_skipped <= '0';
         r_fifo_read_prefetched <= '0';
 
       else
@@ -196,19 +199,20 @@ begin
               end if;
             end if;
 
+
           when WRITE =>
-            if i_spi_cs_n = '1' then
+            if i_spi_cs_n = '1' then          -- if terminating_write_operation then
+              r_first_write_skipped <= '0';
               r_state <= IDLE;
-              r_ignore_first_written_byte <= '1'; -- cleanup for next time
-            elsif w_spi_dout_vld = '1' then
-              if r_ignore_first_written_byte = '0' and w_fifo_full = '0' then
+
+            elsif w_spi_dout_vld = '1' then   -- elsif new_data_received then
+              r_first_write_skipped <= '1';
+              if r_first_write_skipped = '1' and w_fifo_full = '0' then
                 r_fifo_wr_data <= w_spi_dout;
                 r_fifo_wr_en <= '1';
               end if;
-              if r_ignore_first_written_byte = '1' then
-                r_ignore_first_written_byte <= '0';
-              end if;
-            elsif w_spi_din_rdy = '1' then
+
+            elsif w_spi_din_rdy = '1' then    -- elsif ready_to_send_response then
               r_fifo_wr_en <= '0';
               if w_fifo_full = '1' then
                 r_spi_din <= NACK;
@@ -218,9 +222,11 @@ begin
                 r_spi_din <= ACK;
               end if;
               r_spi_din_vld <= '1';
-            else
+
+            else                              -- else
               r_spi_din_vld <= '0';
             end if;
+
 
           when READ =>
             if i_spi_cs_n = '1' then
