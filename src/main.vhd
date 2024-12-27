@@ -4,10 +4,7 @@
 -- 
 -- It's recommended to reset the FPGA before starting the communication to
 -- properly initialize its internal registers and ensure synchronization.
--- To reset the FPGA, assert both `i_spi_cs_n` and `i_rst` , then pulse `i_spi_clk`.
--- TODO LORIS: do you really need to assert `i_spi_cs_n` too?
--- TODO LORIS: eventually force reset on restart by adding a throwaway register in main,
---             then remove any initialization in the declarations.
+-- To reset the FPGA, assert `i_rst`, then pulse `i_spi_clk`.
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -38,13 +35,11 @@ architecture RTL of SPIFIFO is
   constant FIFO_DEPTH  : integer := 5;
 
   -- Constants for SPI commands - Inputs
-  -- TODO LORIS: create type
   constant CMD_COUNT : std_logic_vector(WORD_SIZE-1 downto 0) := x"F0";
   constant CMD_WRITE : std_logic_vector(WORD_SIZE-1 downto 0) := x"F1";
   constant CMD_READ  : std_logic_vector(WORD_SIZE-1 downto 0) := x"F2";
 
   -- Constants for SPI commands - Outputs
-  -- TODO LORIS: create type
   constant ACK        : std_logic_vector(WORD_SIZE-1 downto 0) := x"FA";
   constant NACK       : std_logic_vector(WORD_SIZE-1 downto 0) := x"FB";
   constant FIFO_EMPTY : std_logic_vector(WORD_SIZE-1 downto 0) := x"FE";

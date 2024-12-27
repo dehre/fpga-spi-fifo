@@ -77,6 +77,8 @@ begin
       o_Rd_Data => o_Rd_Data);
 
   -- Main process to control address and counters for FIFO
+  -- TODO LORIS: positive reset line
+  -- TODO LORIS: reset on rising_edge(i_clk)
   process (i_Clk, i_Rst_L) is
   begin
     if i_Rst_L = '0' then
