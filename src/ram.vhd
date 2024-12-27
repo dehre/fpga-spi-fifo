@@ -4,8 +4,8 @@ use ieee.numeric_std.all;
 
 entity RAM is
   generic (
-    WIDTH : integer := 8;
-    DEPTH : integer := 256);
+    WIDTH : natural := 8;
+    DEPTH : natural := 256);
   port (
     -- Write signals
     i_wr_clk  : in  std_logic;

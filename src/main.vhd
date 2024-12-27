@@ -31,8 +31,8 @@ end entity;
 
 architecture RTL of SPIFIFO is
 
-  constant WORD_SIZE   : integer := 8;
-  constant FIFO_DEPTH  : integer := 5;
+  constant WORD_SIZE   : natural := 8;
+  constant FIFO_DEPTH  : natural := 5;
 
   -- Constants for incoming commands
   constant CMD_COUNT : std_logic_vector(WORD_SIZE-1 downto 0) := x"F0";
