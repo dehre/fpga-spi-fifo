@@ -160,7 +160,7 @@ begin
     end if;
   end process;
 
-  -- Main process to control the Finite State Machine
+  -- Main process to control the FSM
   process (i_clk, i_rst)
   begin
     if i_rst = '1' then
