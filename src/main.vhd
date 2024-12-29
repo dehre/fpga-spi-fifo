@@ -70,7 +70,7 @@ architecture RTL of SPIFIFO is
   constant FIFO_FULL  : std_logic_vector(WORD_SIZE-1 downto 0) := x"FF";
 
   -- Signals for DisplayDrivers
-  signal w_count             : natural range 0 to FIFO_DEPTH;
+  signal w_fifo_count        : natural range 0 to FIFO_DEPTH;
   signal w_ones_bcd          : std_logic_vector(3 downto 0);
   signal w_tens_bcd          : std_logic_vector(3 downto 0);
 
@@ -113,10 +113,6 @@ architecture RTL of SPIFIFO is
   -- To ensure this byte isn't lost, it must be placed back into the FIFO.
   signal r_read_prefetched      : std_logic;
 
--- TODO LORIS: keep track of number of items in fifo,
--- or maybe just expose the count register in the FIFO.
--- signal r_fifo_count : natural range 0 to 99;
-
   -- Abstract logic for responding to a command
   function f_acknowledge_cmd (
     w_fifo_full  : std_logic;
@@ -142,7 +138,7 @@ begin
   -- Module converting FIFO count to BCD values for the 7-segment displays
   NumberToBCDInstance: entity work.NumberToBCD
     port map (
-    i_number   => w_count,
+    i_number   => w_fifo_count,
     o_ones_bcd => w_ones_bcd,
     o_tens_bcd => w_tens_bcd);
 
@@ -202,7 +198,7 @@ begin
       o_almost_full  => w_fifo_almost_full,
       o_almost_empty => w_fifo_almost_empty,
       o_empty        => w_fifo_empty,
-      o_count        => w_count);
+      o_count        => w_fifo_count);
 
   -- Register r_spi_cs_n is used by the READ state to stretch the cleanup operation
   process (i_clk)
@@ -265,8 +261,7 @@ begin
             r_state <= IDLE;
           -- if ready to send response:
           elsif w_spi_din_rdy = '1' then
-            -- TODO LORIS: use real data
-            r_spi_din <= std_logic_vector(to_unsigned(74, r_spi_din'length));
+            r_spi_din <= std_logic_vector(to_unsigned(w_fifo_count, r_spi_din'length));
             r_spi_din_vld <= '1';
           -- default:
           else
