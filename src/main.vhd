@@ -70,6 +70,7 @@ architecture RTL of SPIFIFO is
   constant FIFO_FULL  : std_logic_vector(WORD_SIZE-1 downto 0) := x"FF";
 
   -- Signals for DisplayDrivers
+  signal w_count             : natural range 0 to FIFO_DEPTH;
   signal w_ones_bcd          : std_logic_vector(3 downto 0);
   signal w_tens_bcd          : std_logic_vector(3 downto 0);
 
@@ -141,7 +142,7 @@ begin
   -- Module converting FIFO count to BCD values for the 7-segment displays
   NumberToBCDInstance: entity work.NumberToBCD
     port map (
-    i_number   => 29,
+    i_number   => w_count,
     o_ones_bcd => w_ones_bcd,
     o_tens_bcd => w_tens_bcd);
 
@@ -200,7 +201,8 @@ begin
       o_full         => w_fifo_full,
       o_almost_full  => w_fifo_almost_full,
       o_almost_empty => w_fifo_almost_empty,
-      o_empty        => w_fifo_empty);
+      o_empty        => w_fifo_empty,
+      o_count        => w_count);
 
   -- Register r_spi_cs_n is used by the READ state to stretch the cleanup operation
   process (i_clk)
