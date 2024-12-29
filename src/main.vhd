@@ -134,9 +134,9 @@ begin
   -- Module converting FIFO count to BCD values for the 7-segment displays
   NumberToBCDInstance: entity work.NumberToBCD
     port map (
-    i_number   => w_fifo_count,
-    o_ones_bcd => w_ones_bcd,
-    o_tens_bcd => w_tens_bcd);
+      i_number   => w_fifo_count,
+      o_ones_bcd => w_ones_bcd,
+      o_tens_bcd => w_tens_bcd);
 
   -- Feed the FIFO count to the 7-segment displays
   Display0DriverInstance: entity work.DisplayDriver
