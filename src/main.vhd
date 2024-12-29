@@ -4,7 +4,7 @@
 -- 
 -- It's recommended to reset the FPGA before starting the communication to
 -- properly initialize its internal registers and ensure synchronization.
--- To reset the FPGA, assert `i_rst`, then pulse `i_spi_clk`.
+-- To reset the FPGA, assert the `i_rst` line.
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -105,7 +105,7 @@ architecture RTL of SPIFIFO is
 
 begin
 
-  -- Debugging outputs set to low to avoid picking up noise
+  -- Debugging outputs set to output low to avoid picking up noise
   o_debug_a <= '0';
   o_debug_b <= '0';
   o_debug_c <= '0';
@@ -153,140 +153,136 @@ begin
   end process;
 
   -- Main process to control the Finite State Machine
-  process (i_clk)
+  process (i_clk, i_rst)
   begin
-    if rising_edge(i_clk) then
-      -- TODO LORIS: keep reset out of clock
-      if i_rst = '1' then
-        r_cmd <= (others => '0');
-        r_state <= IDLE;
-        r_spi_din <= (others => '0');
-        r_spi_din_vld <= '0';
-        r_fifo_wr_data <= (others => '0');
-        r_fifo_wr_en <= '0';
-        r_fifo_rd_en <= '0';
-        r_fifo_rd_undo <= '0';
-        r_first_write_skipped <= '0';
-        r_read_prefetched <= '0';
+    if i_rst = '1' then
+      r_cmd <= (others => '0');
+      r_state <= IDLE;
+      r_spi_din <= (others => '0');
+      r_spi_din_vld <= '0';
+      r_fifo_wr_data <= (others => '0');
+      r_fifo_wr_en <= '0';
+      r_fifo_rd_en <= '0';
+      r_fifo_rd_undo <= '0';
+      r_first_write_skipped <= '0';
+      r_read_prefetched <= '0';
+    elsif rising_edge(i_clk) then
+      case r_state is
 
-      else
-        case r_state is
+        when IDLE =>
+          -- if new data received:
+          if w_spi_dout_vld = '1' then
+            r_cmd <= w_spi_dout;
 
-          when IDLE =>
-            -- if new data received:
-            if w_spi_dout_vld = '1' then
-              r_cmd <= w_spi_dout;
-
-            -- if ready to send response:
-            elsif w_spi_din_rdy = '1' then
-              case r_cmd is
-                when CMD_COUNT =>
-                  r_state <= COUNT;
-                  r_spi_din <= f_acknowledge_cmd(w_fifo_full, w_fifo_empty);
-                  r_spi_din_vld <= '1';
-                when CMD_WRITE =>
-                  r_state <= WRITE;
-                  r_spi_din <= f_acknowledge_cmd(w_fifo_full, w_fifo_empty);
-                  r_spi_din_vld <= '1';
-                when CMD_READ =>
-                  r_state <= READ;
-                  r_spi_din <= f_acknowledge_cmd(w_fifo_full, w_fifo_empty);
-                  r_spi_din_vld <= '1';
-                when others =>
-                  r_state <= IDLE; -- Unknown command, remain to IDLE
-                  r_spi_din <= NACK;
-                  r_spi_din_vld <= '1';
-              end case;
-
-            else
-              r_spi_din_vld <= '0';
-            end if;
-
-
-          when COUNT =>
-            -- if requested to leave COUNT state:
-            if i_spi_cs_n = '1' then
-              r_state <= IDLE;
-
-            -- if ready to send response:
-            elsif w_spi_din_rdy = '1' then
-              -- TODO LORIS: use real data
-              r_spi_din <= std_logic_vector(to_unsigned(74, r_spi_din'length));
-              r_spi_din_vld <= '1';
-
-            else
-              r_spi_din_vld <= '0';
-            end if;
-
-
-          when WRITE =>
-            -- if requested to leave WRITE state:
-            if i_spi_cs_n = '1' then
-              r_first_write_skipped <= '0';
-              r_state <= IDLE;
-
-            -- if new data received:
-            elsif w_spi_dout_vld = '1' then
-              r_first_write_skipped <= '1';
-              if r_first_write_skipped = '1' and w_fifo_full = '0' then
-                r_fifo_wr_data <= w_spi_dout;
-                r_fifo_wr_en <= '1';
-              end if;
-
-            -- if ready to send response:
-            elsif w_spi_din_rdy = '1' then
-              r_fifo_wr_en <= '0';
-              r_spi_din_vld <= '1';
-              if w_fifo_full = '1' then
+          -- if ready to send response:
+          elsif w_spi_din_rdy = '1' then
+            case r_cmd is
+              when CMD_COUNT =>
+                r_state <= COUNT;
+                r_spi_din <= f_acknowledge_cmd(w_fifo_full, w_fifo_empty);
+                r_spi_din_vld <= '1';
+              when CMD_WRITE =>
+                r_state <= WRITE;
+                r_spi_din <= f_acknowledge_cmd(w_fifo_full, w_fifo_empty);
+                r_spi_din_vld <= '1';
+              when CMD_READ =>
+                r_state <= READ;
+                r_spi_din <= f_acknowledge_cmd(w_fifo_full, w_fifo_empty);
+                r_spi_din_vld <= '1';
+              when others =>
+                r_state <= IDLE; -- Unknown command, remain to IDLE
                 r_spi_din <= NACK;
-              elsif w_fifo_almost_full = '1' then
-                r_spi_din <= FIFO_FULL;
-              else
-                r_spi_din <= ACK;
-              end if;
+                r_spi_din_vld <= '1';
+            end case;
 
-            else
-              r_spi_din_vld <= '0';
+          else
+            r_spi_din_vld <= '0';
+          end if;
+
+
+        when COUNT =>
+          -- if requested to leave COUNT state:
+          if i_spi_cs_n = '1' then
+            r_state <= IDLE;
+
+          -- if ready to send response:
+          elsif w_spi_din_rdy = '1' then
+            -- TODO LORIS: use real data
+            r_spi_din <= std_logic_vector(to_unsigned(74, r_spi_din'length));
+            r_spi_din_vld <= '1';
+
+          else
+            r_spi_din_vld <= '0';
+          end if;
+
+
+        when WRITE =>
+          -- if requested to leave WRITE state:
+          if i_spi_cs_n = '1' then
+            r_first_write_skipped <= '0';
+            r_state <= IDLE;
+
+          -- if new data received:
+          elsif w_spi_dout_vld = '1' then
+            r_first_write_skipped <= '1';
+            if r_first_write_skipped = '1' and w_fifo_full = '0' then
+              r_fifo_wr_data <= w_spi_dout;
+              r_fifo_wr_en <= '1';
             end if;
 
-
-          when READ =>
-            -- if requested to leave READ state:
-            if i_spi_cs_n = '1' and r_spi_cs_n = '0' then
-              if r_read_prefetched = '1' then
-                r_read_prefetched <= '0';
-                r_fifo_rd_undo <= '1';
-              end if;
-            elsif r_spi_cs_n = '1' then
-              r_fifo_rd_undo <= '0';
-              r_state <= IDLE;
-
-            -- if new data received:
-            elsif w_spi_dout_vld = '1' then
-              if w_fifo_empty = '1' then
-                r_read_prefetched <= '0';
-              else
-                r_fifo_rd_en <= '1';
-                r_read_prefetched <= '1';
-              end if;
-
-            -- if ready to send response:
-            elsif w_spi_din_rdy = '1' then
-              r_fifo_rd_en <= '0';
-              r_spi_din_vld <= '1';
-              if r_read_prefetched = '1' then
-                r_spi_din <= w_fifo_rd_data;
-              else
-                r_spi_din <= FIFO_EMPTY;
-              end if;
-
+          -- if ready to send response:
+          elsif w_spi_din_rdy = '1' then
+            r_fifo_wr_en <= '0';
+            r_spi_din_vld <= '1';
+            if w_fifo_full = '1' then
+              r_spi_din <= NACK;
+            elsif w_fifo_almost_full = '1' then
+              r_spi_din <= FIFO_FULL;
             else
-              r_spi_din_vld <= '0';
+              r_spi_din <= ACK;
             end if;
 
+          else
+            r_spi_din_vld <= '0';
+          end if;
 
-        end case; --         end case r_state
-      end if;     --       end if i_rst = '1'
-    end if;       --     end if rising_edge(i_clk)
+
+        when READ =>
+          -- if requested to leave READ state:
+          if i_spi_cs_n = '1' and r_spi_cs_n = '0' then
+            if r_read_prefetched = '1' then
+              r_read_prefetched <= '0';
+              r_fifo_rd_undo <= '1';
+            end if;
+          elsif r_spi_cs_n = '1' then
+            r_fifo_rd_undo <= '0';
+            r_state <= IDLE;
+
+          -- if new data received:
+          elsif w_spi_dout_vld = '1' then
+            if w_fifo_empty = '1' then
+              r_read_prefetched <= '0';
+            else
+              r_fifo_rd_en <= '1';
+              r_read_prefetched <= '1';
+            end if;
+
+          -- if ready to send response:
+          elsif w_spi_din_rdy = '1' then
+            r_fifo_rd_en <= '0';
+            r_spi_din_vld <= '1';
+            if r_read_prefetched = '1' then
+              r_spi_din <= w_fifo_rd_data;
+            else
+              r_spi_din <= FIFO_EMPTY;
+            end if;
+
+          else
+            r_spi_din_vld <= '0';
+          end if;
+
+
+      end case;   --       end case r_state
+    end if;       --     end if i_rst = '1' ... elsif rising_edge(i_clk)
   end process;    --   end process (i_clk)
 end architecture; -- end architecture RTL of SPIFIFO
