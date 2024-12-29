@@ -8,8 +8,8 @@ entity FIFO is
     WIDTH : natural := 8;
     DEPTH : natural := 256);
   port (
-    i_clk          : in std_logic;
     i_rst          : in std_logic;
+    i_clk          : in std_logic;
 
     -- Write Side
     i_wr_dv        : in  std_logic;

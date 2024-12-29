@@ -65,6 +65,10 @@ architecture RTL of SPIFIFO is
   signal w_fifo_almost_full  : std_logic;
   signal w_fifo_almost_empty : std_logic;
 
+  -- FSM States
+  type StateType is (IDLE, COUNT, WRITE, READ);
+  signal r_state : StateType;
+
   -- Signals for FSM
   signal r_cmd      : std_logic_vector(WORD_SIZE-1 downto 0);
   signal r_spi_cs_n : std_logic;
@@ -83,10 +87,6 @@ architecture RTL of SPIFIFO is
 -- TODO LORIS: keep track of number of items in fifo,
 -- or maybe just expose the count register in the FIFO.
 -- signal r_fifo_count : natural range 0 to 99;
-
-  -- FSM States
-  type StateType is (IDLE, COUNT, WRITE, READ);
-  signal r_state : StateType;
 
   -- Abstract logic for responding to a command
   function f_acknowledge_cmd (
@@ -110,12 +110,12 @@ begin
   o_debug_b <= '0';
   o_debug_c <= '0';
 
-  -- Instantiate SPI Slave
+  -- Instantiate SPISlave
   SPISlaveInstance : entity work.SPISlave
     generic map (WORD_SIZE => WORD_SIZE)
     port map (
-      i_clk      => i_clk,
       i_rst      => i_rst,
+      i_clk      => i_clk,
       i_spi_clk  => i_spi_clk,
       i_spi_cs_n => i_spi_cs_n,
       i_spi_mosi => i_spi_mosi,
@@ -127,13 +127,14 @@ begin
       o_dout_vld => w_spi_dout_vld
     );
 
+  -- Instantiate FIFO
   FIFOInstance : entity work.FIFO
     generic map(
       WIDTH => WORD_SIZE,
       DEPTH => FIFO_DEPTH)
     port map (
-      i_clk          => i_clk,
       i_rst          => i_rst,
+      i_clk          => i_clk,
       i_wr_dv        => r_fifo_wr_en,
       i_wr_data      => r_fifo_wr_data,
       i_rd_en        => r_fifo_rd_en,
@@ -156,14 +157,14 @@ begin
   process (i_clk, i_rst)
   begin
     if i_rst = '1' then
-      r_cmd <= (others => '0');
-      r_state <= IDLE;
       r_spi_din <= (others => '0');
       r_spi_din_vld <= '0';
       r_fifo_wr_data <= (others => '0');
       r_fifo_wr_en <= '0';
       r_fifo_rd_en <= '0';
       r_fifo_rd_undo <= '0';
+      r_cmd <= (others => '0');
+      r_state <= IDLE;
       r_first_write_skipped <= '0';
       r_read_prefetched <= '0';
     elsif rising_edge(i_clk) then
@@ -274,7 +275,6 @@ begin
           else
             r_spi_din_vld <= '0';
           end if;
-
 
       end case;   --       end case r_state
     end if;       --     end if i_rst = '1' ... elsif rising_edge(i_clk)
