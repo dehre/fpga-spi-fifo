@@ -15,6 +15,7 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
+-- TODO LORIS: probably not needed after fifo count has been exposed
 use ieee.numeric_std.all;
 
 entity SPIFIFO is
@@ -58,9 +59,9 @@ architecture RTL of SPIFIFO is
   constant FIFO_DEPTH  : natural := 5;
 
   -- Constants for incoming commands
-  constant CMD_COUNT : std_logic_vector(WORD_SIZE-1 downto 0) := x"F0";
-  constant CMD_WRITE : std_logic_vector(WORD_SIZE-1 downto 0) := x"F1";
-  constant CMD_READ  : std_logic_vector(WORD_SIZE-1 downto 0) := x"F2";
+  constant CMD_COUNT  : std_logic_vector(WORD_SIZE-1 downto 0) := x"F0";
+  constant CMD_WRITE  : std_logic_vector(WORD_SIZE-1 downto 0) := x"F1";
+  constant CMD_READ   : std_logic_vector(WORD_SIZE-1 downto 0) := x"F2";
 
   -- Constants for outcoming replies
   constant ACK        : std_logic_vector(WORD_SIZE-1 downto 0) := x"FA";
@@ -68,12 +69,16 @@ architecture RTL of SPIFIFO is
   constant FIFO_EMPTY : std_logic_vector(WORD_SIZE-1 downto 0) := x"FE";
   constant FIFO_FULL  : std_logic_vector(WORD_SIZE-1 downto 0) := x"FF";
 
+  -- Signals for DisplayDrivers
+  signal w_ones_bcd          : std_logic_vector(3 downto 0);
+  signal w_tens_bcd          : std_logic_vector(3 downto 0);
+
   -- Signals for SPISlave
-  signal r_spi_din      : std_logic_vector(WORD_SIZE-1 downto 0);
-  signal r_spi_din_vld  : std_logic;
-  signal w_spi_din_rdy  : std_logic;
-  signal w_spi_dout     : std_logic_vector(WORD_SIZE-1 downto 0);
-  signal w_spi_dout_vld : std_logic;
+  signal r_spi_din           : std_logic_vector(WORD_SIZE-1 downto 0);
+  signal r_spi_din_vld       : std_logic;
+  signal w_spi_din_rdy       : std_logic;
+  signal w_spi_dout          : std_logic_vector(WORD_SIZE-1 downto 0);
+  signal w_spi_dout_vld      : std_logic;
 
   -- Signals for FIFO
   signal r_fifo_wr_en        : std_logic;
@@ -133,10 +138,17 @@ begin
   o_debug_b <= '0';
   o_debug_c <= '0';
 
-  -- Instantiate DisplayDrivers
+  -- Module converting FIFO count to BCD values for the 7-segment displays
+  NumberToBCDInstance: entity work.NumberToBCD
+    port map (
+    i_number   => 29,
+    o_ones_bcd => w_ones_bcd,
+    o_tens_bcd => w_tens_bcd);
+
+  -- Feed the FIFO count to the 7-segment displays
   Display0DriverInstance: entity work.DisplayDriver
     port map (
-      i_bcd       => 7, -- w_ones_bcd,
+      i_bcd       => w_ones_bcd,
       o_segment_a => o_display0_a,
       o_segment_b => o_display0_b,
       o_segment_c => o_display0_c,
@@ -146,7 +158,7 @@ begin
       o_segment_g => o_display0_g);
   Display1DriverInstance: entity work.DisplayDriver
     port map (
-      i_bcd       => 4, -- w_tens_bcd,
+      i_bcd       => w_tens_bcd,
       o_segment_a => o_display1_a,
       o_segment_b => o_display1_b,
       o_segment_c => o_display1_c,
@@ -155,7 +167,7 @@ begin
       o_segment_f => o_display1_f,
       o_segment_g => o_display1_g);
 
-  -- Instantiate SPISlave
+  -- Handle SPI communication
   SPISlaveInstance : entity work.SPISlave
     generic map (WORD_SIZE => WORD_SIZE)
     port map (
@@ -172,7 +184,7 @@ begin
       o_dout_vld => w_spi_dout_vld
     );
 
-  -- Instantiate FIFO
+  -- Instantiate FIFO queue
   FIFOInstance : entity work.FIFO
     generic map(
       WIDTH => WORD_SIZE,
