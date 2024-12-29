@@ -27,7 +27,7 @@ end entity FIFO;
 architecture RTL of FIFO is 
   
   -- Number of bits required to store DEPTH words
-  constant DEPTH_BITS : integer := integer(ceil(log2(real(DEPTH))));
+  constant DEPTH_BITS : natural := natural(ceil(log2(real(DEPTH))));
 
   signal r_count   : natural range 0 to DEPTH;
   signal r_wr_idx  : natural range 0 to DEPTH-1;
