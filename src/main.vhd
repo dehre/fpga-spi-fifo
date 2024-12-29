@@ -15,7 +15,6 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
--- TODO LORIS: probably not needed after fifo count has been exposed
 use ieee.numeric_std.all;
 
 entity SPIFIFO is
