@@ -1,3 +1,6 @@
+-- Converts a natural number (0 to 99) into its two-digit BCD representation.
+-- For inputs outside the valid range, the module outputs 0xFF as a fail-safe.
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -10,15 +13,12 @@ entity NumberToBCD is
 end entity;
 
 architecture RTL of NumberToBCD is
-  signal r_tens : natural range 0 to 9;
-  signal r_ones : natural range 0 to 9;
+  signal w_tens : natural range 0 to 15;
+  signal w_ones : natural range 0 to 15;
 begin
-  process(i_number)
-  begin
-    r_ones <= i_number mod 10;
-    r_tens <= i_number / 10;
-  end process;
+  w_ones <= i_number mod 10 when i_number <= 99 else 15;
+  w_tens <= i_number / 10   when i_number <= 99 else 15;
 
-  o_ones_bcd <= std_logic_vector(to_unsigned(r_ones, o_ones_bcd'length));
-  o_tens_bcd <= std_logic_vector(to_unsigned(r_tens, o_tens_bcd'length));
+  o_ones_bcd <= std_logic_vector(to_unsigned(w_ones, o_ones_bcd'length));
+  o_tens_bcd <= std_logic_vector(to_unsigned(w_tens, o_tens_bcd'length));
 end architecture;
