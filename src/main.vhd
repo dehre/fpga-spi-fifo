@@ -1,6 +1,13 @@
 -- PROJECT TOP.
--- This module receives data (bytes) from an SPI master and echoes it back
--- on the subsequent SPI transaction, functioning as an SPI loopback device.
+-- This module implements a Finite State Machine (FSM) that manages a FIFO queue.
+-- Communication with the FPGA is performed using the SPI protocol in MODE 0.
+-- The SPI master can issue three commands to interact with the module:
+-- 
+-- * CMD_COUNT: Retrieve the number of items currently in the FIFO.
+-- * CMD_WRITE: Write data bytes into the FIFO.
+-- * CMD_READ : Read data bytes from the FIFO.
+-- 
+-- For more detailed usage instructions, refer to the timing  diagram in the README.
 -- 
 -- It's recommended to reset the FPGA before starting the communication to
 -- properly initialize its internal registers and ensure synchronization.
