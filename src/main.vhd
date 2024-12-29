@@ -120,11 +120,11 @@ begin
       i_spi_cs_n => i_spi_cs_n,
       i_spi_mosi => i_spi_mosi,
       o_spi_miso => o_spi_miso,
-      i_din      => r_spi_din,          -- Data to send to SPI master
-      i_din_vld  => r_spi_din_vld,      -- Valid signal for transmitted data
-      o_din_rdy  => w_spi_din_rdy,      -- Ready signal for new transmit data
-      o_dout     => w_spi_dout,         -- Data received from SPI master
-      o_dout_vld => w_spi_dout_vld      -- Valid signal for received data
+      i_din      => r_spi_din,
+      i_din_vld  => r_spi_din_vld,
+      o_din_rdy  => w_spi_din_rdy,
+      o_dout     => w_spi_dout,
+      o_dout_vld => w_spi_dout_vld
     );
 
   FIFOInstance : entity work.FIFO
@@ -144,7 +144,7 @@ begin
       o_almost_empty => w_fifo_almost_empty,
       o_empty        => w_fifo_empty);
 
-  -- Used by the READ state to stretch the cleanup operation
+  -- Register r_spi_cs_n is used by the READ state to stretch the cleanup operation
   process (i_clk)
   begin
     if rising_edge(i_clk) then
