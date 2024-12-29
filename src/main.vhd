@@ -173,7 +173,6 @@ begin
           -- if new data received:
           if w_spi_dout_vld = '1' then
             r_cmd <= w_spi_dout;
-
           -- if ready to send response:
           elsif w_spi_din_rdy = '1' then
             case r_cmd is
@@ -194,7 +193,7 @@ begin
                 r_spi_din <= NACK;
                 r_spi_din_vld <= '1';
             end case;
-
+          -- default:
           else
             r_spi_din_vld <= '0';
           end if;
@@ -204,13 +203,12 @@ begin
           -- if requested to leave COUNT state:
           if i_spi_cs_n = '1' then
             r_state <= IDLE;
-
           -- if ready to send response:
           elsif w_spi_din_rdy = '1' then
             -- TODO LORIS: use real data
             r_spi_din <= std_logic_vector(to_unsigned(74, r_spi_din'length));
             r_spi_din_vld <= '1';
-
+          -- default:
           else
             r_spi_din_vld <= '0';
           end if;
@@ -221,7 +219,6 @@ begin
           if i_spi_cs_n = '1' then
             r_first_write_skipped <= '0';
             r_state <= IDLE;
-
           -- if new data received:
           elsif w_spi_dout_vld = '1' then
             r_first_write_skipped <= '1';
@@ -229,7 +226,6 @@ begin
               r_fifo_wr_data <= w_spi_dout;
               r_fifo_wr_en <= '1';
             end if;
-
           -- if ready to send response:
           elsif w_spi_din_rdy = '1' then
             r_fifo_wr_en <= '0';
@@ -241,7 +237,7 @@ begin
             else
               r_spi_din <= ACK;
             end if;
-
+          -- default:
           else
             r_spi_din_vld <= '0';
           end if;
@@ -257,7 +253,6 @@ begin
           elsif r_spi_cs_n = '1' then
             r_fifo_rd_undo <= '0';
             r_state <= IDLE;
-
           -- if new data received:
           elsif w_spi_dout_vld = '1' then
             if w_fifo_empty = '1' then
@@ -266,7 +261,6 @@ begin
               r_fifo_rd_en <= '1';
               r_read_prefetched <= '1';
             end if;
-
           -- if ready to send response:
           elsif w_spi_din_rdy = '1' then
             r_fifo_rd_en <= '0';
@@ -276,7 +270,7 @@ begin
             else
               r_spi_din <= FIFO_EMPTY;
             end if;
-
+          -- default:
           else
             r_spi_din_vld <= '0';
           end if;
