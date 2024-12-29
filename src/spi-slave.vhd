@@ -9,14 +9,14 @@
 -- Updated Usage:
 -- ```
 -- if o_dout_vld = '1' then
---   /* new data available on o_dout */
+--   -- new data available on o_dout
 --   r_buffer <= o_dout;
 -- elsif o_din_rdy = '1' then
---   /* ready to set response on i_din */
+--   -- ready to set response on i_din
 --   i_din <= x"55";
 --   i_din_vld <= '1';
 -- else
---   /* default state */
+--   -- default state
 --   i_din_vld <= '0';
 -- end if;
 -- ```
@@ -80,7 +80,7 @@ begin
   -- Synchronization registers to eliminate possible metastability.
   process (i_clk)
   begin
-    if (rising_edge(i_clk)) then
+    if rising_edge(i_clk) then
       r_spi_clk_meta <= i_spi_clk;
       r_spi_cs_n_meta <= i_spi_cs_n;
       r_spi_mosi_meta <= i_spi_mosi;
@@ -97,9 +97,9 @@ begin
   -- The SPI clock register is necessary for clock edge detection.
   process (i_clk, i_rst)
   begin
-    if (i_rst = '1') then
+    if i_rst = '1' then
       r2_spi_clk <= '0';
-    elsif (rising_edge(i_clk)) then
+    elsif rising_edge(i_clk) then
       r2_spi_clk <= r1_spi_clk;
     end if;
   end process;
@@ -121,11 +121,11 @@ begin
   -- falling edge of SPI clock is detected and not asserted r_spi_cs_n.
   process (i_clk, i_rst)
   begin
-    if (i_rst = '1') then
+    if i_rst = '1' then
       r_bit_cnt <= (others => '0');
-    elsif (rising_edge(i_clk)) then
-      if (w_spi_clk_fedge_en = '1' and r_spi_cs_n = '0') then
-        if (w_bit_cnt_max = '1') then
+    elsif rising_edge(i_clk) then
+      if w_spi_clk_fedge_en = '1' and r_spi_cs_n = '0' then
+        if w_bit_cnt_max = '1' then
           r_bit_cnt <= (others => '0');
         else
           r_bit_cnt <= r_bit_cnt + 1;
@@ -145,9 +145,9 @@ begin
   -- maximal value of the bit counter.
   process (i_clk, i_rst)
   begin
-    if (i_rst = '1') then
+    if i_rst = '1' then
       r_last_bit_en <= '0';
-    elsif (rising_edge(i_clk)) then
+    elsif rising_edge(i_clk) then
       r_last_bit_en <= w_bit_cnt_max;
     end if;
   end process;
@@ -167,12 +167,12 @@ begin
   -- Data shift register is busy until it sends all input data to SPI master.
   process (i_clk, i_rst)
   begin
-    if (i_rst = '1') then
+    if i_rst = '1' then
       r_shreg_busy <= '0';
-    elsif (rising_edge(i_clk)) then
-      if (i_din_vld = '1' and (r_spi_cs_n = '1' or w_rx_data_vld = '1')) then
+    elsif rising_edge(i_clk) then
+      if i_din_vld = '1' and (r_spi_cs_n = '1' or w_rx_data_vld = '1') then
         r_shreg_busy <= '1';
-      elsif (w_rx_data_vld = '1') then
+      elsif w_rx_data_vld = '1' then
         r_shreg_busy <= '0';
       else
         r_shreg_busy <= r_shreg_busy;
@@ -187,7 +187,7 @@ begin
   -- Stretch `w_slave_ready` to another two clock cycles.
   process (i_clk)
   begin
-    if (rising_edge(i_clk)) then
+    if rising_edge(i_clk) then
       r1_slave_ready <= w_slave_ready;
       r2_slave_ready <= r1_slave_ready;
     end if;
@@ -205,10 +205,10 @@ begin
   -- incoming data from master.
   process (i_clk)
   begin
-    if (rising_edge(i_clk)) then
-      if (w_load_data_en = '1') then
+    if rising_edge(i_clk) then
+      if w_load_data_en = '1' then
         r_data_shreg <= i_din;
-      elsif (w_spi_clk_redge_en = '1' and r_spi_cs_n = '0') then
+      elsif w_spi_clk_redge_en = '1' and r_spi_cs_n = '0' then
         r_data_shreg <= r_data_shreg(WORD_SIZE-2 downto 0) & r_spi_mosi;
       end if;
     end if;
@@ -222,10 +222,10 @@ begin
   -- when is not assert r_spi_cs_n and falling edge of SPI clock is detected.
   process (i_clk)
   begin
-    if (rising_edge(i_clk)) then
-      if (w_load_data_en = '1') then
+    if rising_edge(i_clk) then
+      if w_load_data_en = '1' then
         r_spi_miso <= i_din(WORD_SIZE-1);
-      elsif (w_spi_clk_fedge_en = '1' and r_spi_cs_n = '0') then
+      elsif w_spi_clk_fedge_en = '1' and r_spi_cs_n = '0' then
         r_spi_miso <= r_data_shreg(WORD_SIZE-1);
       end if;
     end if;
