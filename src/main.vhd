@@ -18,7 +18,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity SPIFIFO is
-  -- Inputs/Outputs for the top module.
+  -- Inputs/Outputs for the FPGA
   port (
     -- Debugging Outputs (PMOD Connector)
     o_debug_a  : out std_logic;
@@ -55,7 +55,7 @@ end entity;
 architecture RTL of SPIFIFO is
 
   constant WORD_SIZE   : natural := 8;
-  constant FIFO_DEPTH  : natural := 5;
+  constant FIFO_DEPTH  : natural := 99;
 
   -- Constants for incoming commands
   constant CMD_COUNT  : std_logic_vector(WORD_SIZE-1 downto 0) := x"F0";
@@ -102,15 +102,15 @@ architecture RTL of SPIFIFO is
   signal r_spi_cs_n : std_logic;
 
   -- After CMD_WRITE, the first byte received should be skipped
-  -- (i.e. it shouldn't be added to the FIFO)
+  -- (i.e. it shouldn't be added to the FIFO); see timing diagram.
   signal r_first_write_skipped : std_logic;
 
   -- When CMD_READ is received, bytes are removed from the FIFO and
-  -- latched into the SPI module for transmission in the next response.
-  -- However, if the master asserts `i_spi_cs_n` before the FIFO is
-  -- empty, the last byte fetched from the FIFO will not be transmitted.
+  -- latched into the SPI module for transmission *on the next transaction*.
+  -- If the READ operation is aborted before the FIFO is empty, however,
+  -- the last byte fetched from the FIFO will not be transmitted.
   -- To ensure this byte isn't lost, it must be placed back into the FIFO.
-  signal r_read_prefetched      : std_logic;
+  signal r_read_prefetched : std_logic;
 
   -- Abstract logic for responding to a command
   function f_acknowledge_cmd (
@@ -163,7 +163,7 @@ begin
       o_segment_f => o_display1_f,
       o_segment_g => o_display1_g);
 
-  -- Handle SPI communication
+  -- Handle the SPI communication
   SPISlaveInstance : entity work.SPISlave
     generic map (WORD_SIZE => WORD_SIZE)
     port map (
@@ -180,7 +180,7 @@ begin
       o_dout_vld => w_spi_dout_vld
     );
 
-  -- Instantiate FIFO queue
+  -- Instantiate the FIFO queue
   FIFOInstance : entity work.FIFO
     generic map(
       WIDTH => WORD_SIZE,
