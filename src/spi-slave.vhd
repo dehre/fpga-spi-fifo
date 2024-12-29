@@ -29,7 +29,7 @@ use ieee.math_real.all;
 entity SPISlave is
   generic (WORD_SIZE : natural := 8); -- size of transfer word in bits, must be power of two
   port (
-    i_rst      : in  std_logic;  -- high active synchronous reset
+    i_rst      : in  std_logic;  -- high active asynchronous reset
     i_clk      : in  std_logic;  -- system clock
 
     -- SPI Slave Interface
@@ -95,14 +95,12 @@ begin
   -- -------------------------------------------------------------------------
 
   -- The SPI clock register is necessary for clock edge detection.
-  process (i_clk)
+  process (i_clk, i_rst)
   begin
-    if (rising_edge(i_clk)) then
-      if (i_rst = '1') then
-        r2_spi_clk <= '0';
-      else
-        r2_spi_clk <= r1_spi_clk;
-      end if;
+    if (i_rst = '1') then
+      r2_spi_clk <= '0';
+    elsif (rising_edge(i_clk)) then
+      r2_spi_clk <= r1_spi_clk;
     end if;
   end process;
 
@@ -121,12 +119,12 @@ begin
 
   -- The counter counts received bits from the master. Counter is enabled when
   -- falling edge of SPI clock is detected and not asserted r_spi_cs_n.
-  process (i_clk)
+  process (i_clk, i_rst)
   begin
-    if (rising_edge(i_clk)) then
-      if (i_rst = '1') then
-        r_bit_cnt <= (others => '0');
-      elsif (w_spi_clk_fedge_en = '1' and r_spi_cs_n = '0') then
+    if (i_rst = '1') then
+      r_bit_cnt <= (others => '0');
+    elsif (rising_edge(i_clk)) then
+      if (w_spi_clk_fedge_en = '1' and r_spi_cs_n = '0') then
         if (w_bit_cnt_max = '1') then
           r_bit_cnt <= (others => '0');
         else
@@ -145,14 +143,12 @@ begin
 
   -- The flag of last bit of received byte is only registered the flag of
   -- maximal value of the bit counter.
-  process (i_clk)
+  process (i_clk, i_rst)
   begin
-    if (rising_edge(i_clk)) then
-      if (i_rst = '1') then
-        r_last_bit_en <= '0';
-      else
-        r_last_bit_en <= w_bit_cnt_max;
-      end if;
+    if (i_rst = '1') then
+      r_last_bit_en <= '0';
+    elsif (rising_edge(i_clk)) then
+      r_last_bit_en <= w_bit_cnt_max;
     end if;
   end process;
 
@@ -169,19 +165,17 @@ begin
   -- -------------------------------------------------------------------------
 
   -- Data shift register is busy until it sends all input data to SPI master.
-  process (i_clk)
+  process (i_clk, i_rst)
   begin
-    if (rising_edge(i_clk)) then
-      if (i_rst = '1') then
+    if (i_rst = '1') then
+      r_shreg_busy <= '0';
+    elsif (rising_edge(i_clk)) then
+      if (i_din_vld = '1' and (r_spi_cs_n = '1' or w_rx_data_vld = '1')) then
+        r_shreg_busy <= '1';
+      elsif (w_rx_data_vld = '1') then
         r_shreg_busy <= '0';
       else
-        if (i_din_vld = '1' and (r_spi_cs_n = '1' or w_rx_data_vld = '1')) then
-          r_shreg_busy <= '1';
-        elsif (w_rx_data_vld = '1') then
-          r_shreg_busy <= '0';
-        else
-          r_shreg_busy <= r_shreg_busy;
-        end if;
+        r_shreg_busy <= r_shreg_busy;
       end if;
     end if;
   end process;
