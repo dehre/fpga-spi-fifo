@@ -10,7 +10,7 @@ entity RAM is
     -- Write signals
     i_wr_clk  : in  std_logic;
     i_wr_addr : in  std_logic_vector; -- Gets sized at higher level
-    i_wr_dv   : in  std_logic;
+    i_wr_en   : in  std_logic;
     i_wr_data : in  std_logic_vector(WIDTH-1 downto 0);
     -- Read signals
     i_rd_clk  : in  std_logic;
@@ -32,7 +32,7 @@ begin
   process (i_wr_clk)
   begin
     if rising_edge(i_wr_clk) then
-      if i_wr_dv = '1' then
+      if i_wr_en = '1' then
         r_memory(to_integer(unsigned(i_wr_addr))) <= i_wr_data;
       end if;
     end if;

@@ -10,16 +10,13 @@ entity FIFO is
   port (
     i_rst          : in std_logic;
     i_clk          : in std_logic;
-
-    -- Write Side
-    i_wr_dv        : in  std_logic;
+    -- Write signals
+    i_wr_en        : in  std_logic;
     i_wr_data      : in  std_logic_vector(WIDTH-1 downto 0);
-
-    -- Read Side
+    -- Read signals
     i_rd_en        : in  std_logic;
     i_rd_undo      : in  std_logic; -- undo last read operation
     o_rd_data      : out std_logic_vector(WIDTH-1 downto 0);
-
     -- Flags
     o_full         : out std_logic;
     o_almost_full  : out std_logic;
@@ -49,13 +46,10 @@ begin
       WIDTH => WIDTH,
       DEPTH => DEPTH)
     port map(
-      -- Write Port
       i_wr_clk  => i_clk,
       i_wr_addr => w_wr_addr,
-      i_wr_dv   => i_wr_dv,
+      i_wr_en   => i_wr_en,
       i_wr_data => i_wr_data,
-
-      -- Read Port
       i_rd_clk  => i_clk,
       i_rd_addr => w_rd_addr,
       i_rd_en   => i_rd_en,
@@ -70,7 +64,7 @@ begin
     elsif rising_edge(i_clk) then
       
       -- Write
-      if i_wr_dv = '1' then
+      if i_wr_en = '1' then
         if r_wr_idx = DEPTH-1 then
           r_wr_idx <= 0;
         else
@@ -101,7 +95,7 @@ begin
         if (r_count /= 0) then
           r_count <= r_count - 1;
         end if;
-      elsif i_wr_dv = '1' or i_rd_undo = '1' then
+      elsif i_wr_en = '1' or i_rd_undo = '1' then
         if r_count /= DEPTH then
           r_count <= r_count + 1;
         end if;
@@ -111,11 +105,11 @@ begin
   end process;
 
   o_full <= '1'
-    when (r_count = DEPTH) or (r_count = DEPTH-1 and i_wr_dv = '1')
+    when (r_count = DEPTH) or (r_count = DEPTH-1 and i_wr_en = '1')
     else '0';
 
   o_almost_full <= '1'
-    when (r_count >= DEPTH-1) or (r_count >= DEPTH-2 and i_wr_dv = '1')
+    when (r_count >= DEPTH-1) or (r_count >= DEPTH-2 and i_wr_en = '1')
     else '0';
 
   o_almost_empty <= '1'

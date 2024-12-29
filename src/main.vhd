@@ -135,7 +135,7 @@ begin
     port map (
       i_rst          => i_rst,
       i_clk          => i_clk,
-      i_wr_dv        => r_fifo_wr_en,
+      i_wr_en        => r_fifo_wr_en,
       i_wr_data      => r_fifo_wr_data,
       i_rd_en        => r_fifo_rd_en,
       i_rd_undo      => r_fifo_rd_undo,
@@ -278,5 +278,5 @@ begin
 
       end case;   --       end case r_state
     end if;       --     end if i_rst = '1' ... elsif rising_edge(i_clk)
-  end process;    --   end process (i_clk)
+  end process;    --   end process (i_clk, i_rst)
 end architecture; -- end architecture RTL of SPIFIFO
