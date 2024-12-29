@@ -2,8 +2,9 @@
 -- https://github.com/jakubcabal/spi-fpga/tree/d8240ff3f59fdeeadd87692333aeafb69b0b88a1
 --
 -- Changes:
--- * set MISO to high impedance state when inactive;
--- * stretch o_din_rdy to two clock cycles to allow setting response in state machine
+-- * set o_spi_miso to high impedance state when inactive;
+-- * make i_rst asynchronous;
+-- * delay o_din_rdy and w_load_data_en to give the FSM time to process the request.
 --
 -- Updated Usage:
 -- ```
