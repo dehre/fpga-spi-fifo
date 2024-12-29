@@ -20,20 +20,36 @@ use ieee.numeric_std.all;
 entity SPIFIFO is
   -- Inputs/Outputs for the top module.
   port (
-    -- Debugging Outputs
+    -- Debugging Outputs (PMOD Connector)
     o_debug_a  : out std_logic;
     o_debug_b  : out std_logic;
     o_debug_c  : out std_logic;
 
-    -- Control/Data Signals
+    -- Control/Data Signals (PMOD Connector)
     i_rst      : in  std_logic;     -- FPGA Reset
     i_clk      : in  std_logic;     -- FPGA Clock
 
-    -- SPI Interface
+    -- SPI Interface (PMOD Connector)
     i_spi_clk  : in  std_logic;     -- SPI Clock
     o_spi_miso : out std_logic;     -- Master In, Slave Out
     i_spi_mosi : in  std_logic;     -- Master Out, Slave In
-    i_spi_cs_n : in  std_logic);    -- Chip Select, active low
+    i_spi_cs_n : in  std_logic;     -- Chip Select, active low
+
+    -- 7-Segment Displays (Onboard)
+    o_display0_a : out std_logic;   -- Display 0, segment A
+    o_display0_b : out std_logic;   -- Display 0, segment B
+    o_display0_c : out std_logic;   -- Display 0, segment C
+    o_display0_d : out std_logic;   -- Display 0, segment D
+    o_display0_e : out std_logic;   -- Display 0, segment E
+    o_display0_f : out std_logic;   -- Display 0, segment F
+    o_display0_g : out std_logic;   -- Display 0, segment G
+    o_display1_a : out std_logic;   -- Display 1, segment A
+    o_display1_b : out std_logic;   -- Display 1, segment B
+    o_display1_c : out std_logic;   -- Display 1, segment C
+    o_display1_d : out std_logic;   -- Display 1, segment D
+    o_display1_e : out std_logic;   -- Display 1, segment E
+    o_display1_f : out std_logic;   -- Display 1, segment F
+    o_display1_g : out std_logic);  -- Display 1, segment G
 end entity;
 
 architecture RTL of SPIFIFO is
@@ -116,6 +132,28 @@ begin
   o_debug_a <= '0';
   o_debug_b <= '0';
   o_debug_c <= '0';
+
+  -- Instantiate DisplayDrivers
+  Display0DriverInstance: entity work.DisplayDriver
+    port map (
+      i_bcd       => 7, -- w_ones_bcd,
+      o_segment_a => o_display0_a,
+      o_segment_b => o_display0_b,
+      o_segment_c => o_display0_c,
+      o_segment_d => o_display0_d,
+      o_segment_e => o_display0_e,
+      o_segment_f => o_display0_f,
+      o_segment_g => o_display0_g);
+  Display1DriverInstance: entity work.DisplayDriver
+    port map (
+      i_bcd       => 4, -- w_tens_bcd,
+      o_segment_a => o_display1_a,
+      o_segment_b => o_display1_b,
+      o_segment_c => o_display1_c,
+      o_segment_d => o_display1_d,
+      o_segment_e => o_display1_e,
+      o_segment_f => o_display1_f,
+      o_segment_g => o_display1_g);
 
   -- Instantiate SPISlave
   SPISlaveInstance : entity work.SPISlave
