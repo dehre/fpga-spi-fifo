@@ -1,5 +1,10 @@
 -- Converts a natural number (0 to 99) into its two-digit BCD representation.
 -- For inputs outside the valid range, the module outputs 0xFF as a fail-safe.
+-- 
+-- TODO LORIS:
+-- Warning: Found 1 combinational loops!
+-- @W: BN137 :"c:\users\marce\desktop\new folder\src\number-to-bcd.vhd":26:16:26:28
+-- Found combinational loop during mapping at net NumberToBCDInstance.mult1_un54_sum_i[5]
 
 library ieee;
 use ieee.std_logic_1164.all;
