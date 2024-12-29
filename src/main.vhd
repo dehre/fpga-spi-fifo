@@ -1,17 +1,16 @@
 -- PROJECT TOP.
--- This module implements a Finite State Machine (FSM) that manages a FIFO queue.
--- Communication with the FPGA is performed using the SPI protocol in MODE 0.
--- The SPI master can issue three commands to interact with the module:
 -- 
+-- This module implements a Finite State Machine (FSM) around a FIFO queue.
+-- Communication with the FPGA is performed using SPI in MODE 0.
+-- 
+-- The following commands are available to the SPI master:
 -- * CMD_COUNT: Retrieve the number of items currently in the FIFO.
 -- * CMD_WRITE: Write data bytes into the FIFO.
 -- * CMD_READ : Read data bytes from the FIFO.
+-- Refer to the timing diagram in the README for details.
 -- 
--- For more detailed usage instructions, refer to the timing  diagram in the README.
--- 
--- It's recommended to reset the FPGA before starting the communication to
--- properly initialize its internal registers and ensure synchronization.
--- To reset the FPGA, assert the `i_rst` line.
+-- It's recommended to assert `i_rst` to reset the FPGA to a known state
+-- before starting the communication.
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -101,15 +100,13 @@ architecture RTL of SPIFIFO is
   signal r_cmd      : std_logic_vector(WORD_SIZE-1 downto 0);
   signal r_spi_cs_n : std_logic;
 
-  -- After CMD_WRITE, the first byte received should be skipped
-  -- (i.e. it shouldn't be added to the FIFO); see timing diagram.
+  -- Tracks whether the first byte received after CMD_WRITE should
+  -- be skipped (not added to the FIFO); see timing diagram
   signal r_first_write_skipped : std_logic;
 
-  -- When CMD_READ is received, bytes are removed from the FIFO and
-  -- latched into the SPI module for transmission *on the next transaction*.
-  -- If the READ operation is aborted before the FIFO is empty, however,
-  -- the last byte fetched from the FIFO will not be transmitted.
-  -- To ensure this byte isn't lost, it must be placed back into the FIFO.
+  -- Tracks whether a byte was prefetched from the FIFO for CMD_READ
+  -- but not transmitted: if the READ operation is aborted, this byte
+  -- is returned to the FIFO
   signal r_read_prefetched : std_logic;
 
   -- Abstract logic for responding to a command
