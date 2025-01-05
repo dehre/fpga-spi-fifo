@@ -131,7 +131,7 @@ begin
   o_debug_b <= '0';
   o_debug_c <= '0';
 
-  -- Module converting FIFO count to BCD values for the 7-segment displays
+  -- Entity converting FIFO count to BCD values for the 7-segment displays
   NumberToBCDInstance: entity work.NumberToBCD
     port map (
       i_number   => w_fifo_count,
