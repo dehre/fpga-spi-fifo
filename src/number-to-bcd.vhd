@@ -1,10 +1,10 @@
 -- Converts a natural number (0 to 99) into its two-digit BCD representation.
 -- 
--- The conversion is implemented using the "double-dabble" algorithm.
--- It has been adapted from:
+-- The conversion is based on the "double-dabble" algorithm.
+-- Useful article:
 -- https://vhdlguru.blogspot.com/2010/04/8-bit-binary-to-bcd-converter-double.html
 -- 
--- A simpler implementations, such as:
+-- A simpler implementation, such as:
 -- ```
 -- o_ones_bcd <= std_logic_vector(to_unsigned(i_number mod 10, o_ones_bcd'length));
 -- o_tens_bcd <= std_logic_vector(to_unsigned(i_number / 10  , o_tens_bcd'length));

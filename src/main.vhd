@@ -105,8 +105,8 @@ architecture RTL of SPIFIFO is
   signal r_first_write_skipped : std_logic;
 
   -- Tracks whether a byte was prefetched from the FIFO for CMD_READ
-  -- but not transmitted: if the READ operation is aborted, this byte
-  -- is returned to the FIFO
+  -- but not transmitted: if the READ operation is aborted before
+  -- the FIFO is empty, this byte is returned to the queue
   signal r_read_prefetched : std_logic;
 
   -- Abstract logic for responding to a command
