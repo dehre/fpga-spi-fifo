@@ -25,7 +25,7 @@ end entity;
 architecture RTL of NumberToBCD is
 
   signal w_binary : unsigned(7 downto 0);
-  signal w_bcd : unsigned(7 downto 0);
+  signal w_bcd    : unsigned(7 downto 0);
 
   function f_binary_to_bcd (w_binary : unsigned(7 downto 0))
   return unsigned is
