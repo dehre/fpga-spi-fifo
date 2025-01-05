@@ -1,50 +1,65 @@
 -- PROJECT TOP.
--- This module implements a Finite State Machine (FSM) that manages a FIFO queue.
--- Communication with the FPGA is performed using the SPI protocol in MODE 0.
--- The SPI master can issue three commands to interact with the module:
 -- 
+-- This module implements a Finite State Machine (FSM) around a FIFO queue.
+-- Communication with the FPGA is performed using SPI in MODE 0.
+-- 
+-- The following commands are available to the SPI master:
 -- * CMD_COUNT: Retrieve the number of items currently in the FIFO.
 -- * CMD_WRITE: Write data bytes into the FIFO.
 -- * CMD_READ : Read data bytes from the FIFO.
+-- Refer to the timing diagram in the README for details.
 -- 
--- For more detailed usage instructions, refer to the timing  diagram in the README.
--- 
--- It's recommended to reset the FPGA before starting the communication to
--- properly initialize its internal registers and ensure synchronization.
--- To reset the FPGA, assert the `i_rst` line.
+-- It's recommended to assert `i_rst` to reset the FPGA to a known state
+-- before starting the communication.
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity SPIFIFO is
-  -- Inputs/Outputs for the top module.
+  -- Inputs/Outputs for the FPGA
   port (
-    -- Debugging Outputs
+    -- Debugging Outputs (PMOD Connector)
     o_debug_a  : out std_logic;
     o_debug_b  : out std_logic;
     o_debug_c  : out std_logic;
 
-    -- Control/Data Signals
+    -- Control/Data Signals (PMOD Connector)
     i_rst      : in  std_logic;     -- FPGA Reset
     i_clk      : in  std_logic;     -- FPGA Clock
 
-    -- SPI Interface
+    -- SPI Interface (PMOD Connector)
     i_spi_clk  : in  std_logic;     -- SPI Clock
     o_spi_miso : out std_logic;     -- Master In, Slave Out
     i_spi_mosi : in  std_logic;     -- Master Out, Slave In
-    i_spi_cs_n : in  std_logic);    -- Chip Select, active low
+    i_spi_cs_n : in  std_logic;     -- Chip Select, active low
+
+    -- 7-Segment Displays (Onboard)
+    o_display0_a : out std_logic;   -- Display 0, segment A
+    o_display0_b : out std_logic;   -- Display 0, segment B
+    o_display0_c : out std_logic;   -- Display 0, segment C
+    o_display0_d : out std_logic;   -- Display 0, segment D
+    o_display0_e : out std_logic;   -- Display 0, segment E
+    o_display0_f : out std_logic;   -- Display 0, segment F
+    o_display0_g : out std_logic;   -- Display 0, segment G
+    o_display1_a : out std_logic;   -- Display 1, segment A
+    o_display1_b : out std_logic;   -- Display 1, segment B
+    o_display1_c : out std_logic;   -- Display 1, segment C
+    o_display1_d : out std_logic;   -- Display 1, segment D
+    o_display1_e : out std_logic;   -- Display 1, segment E
+    o_display1_f : out std_logic;   -- Display 1, segment F
+    o_display1_g : out std_logic);  -- Display 1, segment G
 end entity;
 
 architecture RTL of SPIFIFO is
 
   constant WORD_SIZE   : natural := 8;
-  constant FIFO_DEPTH  : natural := 5;
+  constant FIFO_DEPTH  : natural := 99;
 
   -- Constants for incoming commands
-  constant CMD_COUNT : std_logic_vector(WORD_SIZE-1 downto 0) := x"F0";
-  constant CMD_WRITE : std_logic_vector(WORD_SIZE-1 downto 0) := x"F1";
-  constant CMD_READ  : std_logic_vector(WORD_SIZE-1 downto 0) := x"F2";
+  constant CMD_COUNT  : std_logic_vector(WORD_SIZE-1 downto 0) := x"F0";
+  constant CMD_WRITE  : std_logic_vector(WORD_SIZE-1 downto 0) := x"F1";
+  constant CMD_READ   : std_logic_vector(WORD_SIZE-1 downto 0) := x"F2";
 
   -- Constants for outcoming replies
   constant ACK        : std_logic_vector(WORD_SIZE-1 downto 0) := x"FA";
@@ -52,12 +67,17 @@ architecture RTL of SPIFIFO is
   constant FIFO_EMPTY : std_logic_vector(WORD_SIZE-1 downto 0) := x"FE";
   constant FIFO_FULL  : std_logic_vector(WORD_SIZE-1 downto 0) := x"FF";
 
+  -- Signals for DisplayDrivers
+  signal w_fifo_count        : natural range 0 to FIFO_DEPTH;
+  signal w_ones_bcd          : std_logic_vector(3 downto 0);
+  signal w_tens_bcd          : std_logic_vector(3 downto 0);
+
   -- Signals for SPISlave
-  signal r_spi_din      : std_logic_vector(WORD_SIZE-1 downto 0);
-  signal r_spi_din_vld  : std_logic;
-  signal w_spi_din_rdy  : std_logic;
-  signal w_spi_dout     : std_logic_vector(WORD_SIZE-1 downto 0);
-  signal w_spi_dout_vld : std_logic;
+  signal r_spi_din           : std_logic_vector(WORD_SIZE-1 downto 0);
+  signal r_spi_din_vld       : std_logic;
+  signal w_spi_din_rdy       : std_logic;
+  signal w_spi_dout          : std_logic_vector(WORD_SIZE-1 downto 0);
+  signal w_spi_dout_vld      : std_logic;
 
   -- Signals for FIFO
   signal r_fifo_wr_en        : std_logic;
@@ -80,20 +100,14 @@ architecture RTL of SPIFIFO is
   signal r_cmd      : std_logic_vector(WORD_SIZE-1 downto 0);
   signal r_spi_cs_n : std_logic;
 
-  -- After CMD_WRITE, the first byte received should be skipped
-  -- (i.e. it shouldn't be added to the FIFO)
+  -- Tracks whether the first byte received after CMD_WRITE should
+  -- be skipped (not added to the FIFO); see timing diagram
   signal r_first_write_skipped : std_logic;
 
-  -- When CMD_READ is received, bytes are removed from the FIFO and
-  -- latched into the SPI module for transmission in the next response.
-  -- However, if the master asserts `i_spi_cs_n` before the FIFO is
-  -- empty, the last byte fetched from the FIFO will not be transmitted.
-  -- To ensure this byte isn't lost, it must be placed back into the FIFO.
-  signal r_read_prefetched      : std_logic;
-
--- TODO LORIS: keep track of number of items in fifo,
--- or maybe just expose the count register in the FIFO.
--- signal r_fifo_count : natural range 0 to 99;
+  -- Tracks whether a byte was prefetched from the FIFO for CMD_READ
+  -- but not transmitted: if the READ operation is aborted before
+  -- the FIFO is empty, this byte is returned to the queue
+  signal r_read_prefetched : std_logic;
 
   -- Abstract logic for responding to a command
   function f_acknowledge_cmd (
@@ -117,7 +131,36 @@ begin
   o_debug_b <= '0';
   o_debug_c <= '0';
 
-  -- Instantiate SPISlave
+  -- Entity converting FIFO count to BCD values for the 7-segment displays
+  NumberToBCDInstance: entity work.NumberToBCD
+    port map (
+      i_number   => w_fifo_count,
+      o_ones_bcd => w_ones_bcd,
+      o_tens_bcd => w_tens_bcd);
+
+  -- Feed the FIFO count to the 7-segment displays
+  Display0DriverInstance: entity work.DisplayDriver
+    port map (
+      i_bcd       => w_ones_bcd,
+      o_segment_a => o_display0_a,
+      o_segment_b => o_display0_b,
+      o_segment_c => o_display0_c,
+      o_segment_d => o_display0_d,
+      o_segment_e => o_display0_e,
+      o_segment_f => o_display0_f,
+      o_segment_g => o_display0_g);
+  Display1DriverInstance: entity work.DisplayDriver
+    port map (
+      i_bcd       => w_tens_bcd,
+      o_segment_a => o_display1_a,
+      o_segment_b => o_display1_b,
+      o_segment_c => o_display1_c,
+      o_segment_d => o_display1_d,
+      o_segment_e => o_display1_e,
+      o_segment_f => o_display1_f,
+      o_segment_g => o_display1_g);
+
+  -- Handle the SPI communication
   SPISlaveInstance : entity work.SPISlave
     generic map (WORD_SIZE => WORD_SIZE)
     port map (
@@ -134,7 +177,7 @@ begin
       o_dout_vld => w_spi_dout_vld
     );
 
-  -- Instantiate FIFO
+  -- Instantiate the FIFO queue
   FIFOInstance : entity work.FIFO
     generic map(
       WIDTH => WORD_SIZE,
@@ -150,7 +193,8 @@ begin
       o_full         => w_fifo_full,
       o_almost_full  => w_fifo_almost_full,
       o_almost_empty => w_fifo_almost_empty,
-      o_empty        => w_fifo_empty);
+      o_empty        => w_fifo_empty,
+      o_count        => w_fifo_count);
 
   -- Register r_spi_cs_n is used by the READ state to stretch the cleanup operation
   process (i_clk)
@@ -213,8 +257,7 @@ begin
             r_state <= IDLE;
           -- if ready to send response:
           elsif w_spi_din_rdy = '1' then
-            -- TODO LORIS: use real data
-            r_spi_din <= std_logic_vector(to_unsigned(74, r_spi_din'length));
+            r_spi_din <= std_logic_vector(to_unsigned(w_fifo_count, r_spi_din'length));
             r_spi_din_vld <= '1';
           -- default:
           else

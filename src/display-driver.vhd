@@ -17,6 +17,11 @@ architecture RTL of DisplayDriver is
 
   signal r_hex_encoding : std_logic_vector(7 downto 0);
 
+  -- Infer LUT implementation when using Synplify Pro; see:
+  -- https://www.latticesemi.com/support/answerdatabase/3/8/5/3853
+  attribute syn_romstyle : string;
+  attribute syn_romstyle of r_hex_encoding : signal is "logic";
+
 begin
 
   -- Table: https://hosteng.com/dmdhelp/content/instruction_set/SEG_Hex_BCD_to_7_Segment_Display.htm

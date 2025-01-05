@@ -1,7 +1,7 @@
 -- Adapted from:
 -- https://github.com/jakubcabal/spi-fpga/tree/d8240ff3f59fdeeadd87692333aeafb69b0b88a1
 -- 
--- THE SPI SLAVE MODULE SUPPORT ONLY SPI MODE 0 (CPOL=0, CPHA=0).
+-- THE SPI SLAVE ENTITY SUPPORTS ONLY SPI MODE 0 (CPOL=0, CPHA=0).
 --
 -- Changes:
 -- * set o_spi_miso to high impedance state when inactive;

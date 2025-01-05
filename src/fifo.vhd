@@ -10,19 +10,23 @@ entity FIFO is
   port (
     i_rst          : in std_logic;
     i_clk          : in std_logic;
+
     -- Write signals
     i_wr_en        : in  std_logic;
     i_wr_data      : in  std_logic_vector(WIDTH-1 downto 0);
+
     -- Read signals
     i_rd_en        : in  std_logic;
     i_rd_undo      : in  std_logic; -- undo last read operation
     o_rd_data      : out std_logic_vector(WIDTH-1 downto 0);
-    -- Flags
+
+    -- Flags and Count
     o_full         : out std_logic;
     o_almost_full  : out std_logic;
     o_almost_empty : out std_logic;
-    o_empty        : out std_logic);
-end entity FIFO;
+    o_empty        : out std_logic;
+    o_count        : out natural range 0 to DEPTH);
+end entity;
 
 architecture RTL of FIFO is 
   
@@ -119,5 +123,7 @@ begin
   o_empty <= '1'
     when (r_count = 0) or (r_count = 1 and i_rd_en = '1')
     else '0';
+
+  o_count <= r_count;
 
 end architecture;
