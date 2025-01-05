@@ -21,8 +21,18 @@ begin
       o_tens_bcd => w_tens_bcd);
 
   -- Exercise the UUT
-  process is 
+  process is
   begin
+
+    r_number <= 0;
+    wait for 1 ns;
+    assert(w_ones_bcd = x"0") severity failure;
+    assert(w_tens_bcd = x"0") severity failure;
+
+    r_number <= 99;
+    wait for 1 ns;
+    assert(w_ones_bcd = x"9") severity failure;
+    assert(w_tens_bcd = x"9") severity failure;
 
     r_number <= 18;
     wait for 1 ns;
@@ -33,16 +43,6 @@ begin
     wait for 1 ns;
     assert(w_ones_bcd = x"7") severity failure;
     assert(w_tens_bcd = x"3") severity failure;
-
-    r_number <= 99;
-    wait for 1 ns;
-    assert(w_ones_bcd = x"9") severity failure;
-    assert(w_tens_bcd = x"9") severity failure;
-
-    r_number <= 0;
-    wait for 1 ns;
-    assert(w_ones_bcd = x"0") severity failure;
-    assert(w_tens_bcd = x"0") severity failure;
 
     finish;
   end process;
