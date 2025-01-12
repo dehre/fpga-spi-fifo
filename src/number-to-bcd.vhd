@@ -1,6 +1,6 @@
 -- Converts a natural number (0 to 99) into its two-digit BCD representation.
 -- 
--- The conversion is based on the "double-dabble" algorithm.
+-- The conversion is based on the "double dabble" algorithm.
 -- Useful article:
 -- https://vhdlguru.blogspot.com/2010/04/8-bit-binary-to-bcd-converter-double.html
 -- 
