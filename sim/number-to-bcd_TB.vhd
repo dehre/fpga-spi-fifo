@@ -25,7 +25,7 @@ begin
   begin
 
     r_number <= 0;
-    wait for 1 ns;
+    wait for 1 ns; -- allow propagation delay
     assert(w_ones_bcd = x"0") severity failure;
     assert(w_tens_bcd = x"0") severity failure;
 
@@ -44,6 +44,8 @@ begin
     assert(w_ones_bcd = x"7") severity failure;
     assert(w_tens_bcd = x"3") severity failure;
 
+    wait for 5 ns;
+    report "NumberToBCD Testbench passed!" severity note;
     finish;
   end process;
 end architecture;

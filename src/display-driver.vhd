@@ -1,5 +1,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
  
 entity DisplayDriver is
   port (
@@ -27,7 +28,7 @@ begin
   -- Table: https://hosteng.com/dmdhelp/content/instruction_set/SEG_Hex_BCD_to_7_Segment_Display.htm
   process(i_bcd)
   begin
-    case i_bcd is
+    case to_integer(unsigned(i_bcd)) is
       when 0 =>
         r_hex_encoding <= not x"3F"; -- invert needed on Go board
       when 1 =>
@@ -60,6 +61,8 @@ begin
         r_hex_encoding <= not x"79";
       when 15 =>
         r_hex_encoding <= not x"71";
+      when others =>
+        r_hex_encoding <= (others => '0'); -- should not happen
     end case;
   end process;
 
